@@ -1,0 +1,1747 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورشة Flutter المتقدمة — اليوم الرابع</title>
+<meta name="description" content="عرض اليوم الرابع: الاختبارات (unit · widget · integration) + واجهات متقدمة (أنيميشن، Slivers، CustomPainter، ثيمات، ترجمة) + درس Dart قصير (Extension methods) — يطابق أمثلة day4_examples/lib/lessons">
+<link href="../assets/fonts/fonts.css" rel="stylesheet"><!-- خطوط محلية: يعمل العرض بدون إنترنت -->
+<style>
+/* ============================================================
+   Identity: Dart/Flutter navy + sky, amber for "run" cues
+   ============================================================ */
+:root{
+  --bg:#061A2E; --bg2:#0B2A47; --card:#0E3156; --code:#04111F;
+  --ink:#F3F7FB; --muted:#9FB3C8; --sky:#54C5F8; --blue:#13B9FD; --deep:#0175C2;
+  --amber:#FFC108; --teal:#2EE6A6; --rose:#FF6B81;
+  --sans:'Tajawal',system-ui,sans-serif; --mono:'JetBrains Mono','Fira Code',monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+code{font-family:var(--mono)}
+
+/* ---------- stage (16:9, scaled to fit) ---------- */
+#stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:var(--bg);
+  --enter:-80px;--leave:80px}
+#stage.back{--enter:80px;--leave:-80px}
+#stage::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1.2px,transparent 1.2px);background-size:40px 40px;pointer-events:none}
+.bgshape{position:absolute;pointer-events:none}
+.bg1{left:-160px;bottom:-140px;width:680px;height:680px;background:linear-gradient(135deg,rgba(84,197,248,.18),rgba(1,117,194,.04));clip-path:polygon(0 100%,100% 0,100% 42%,42% 100%)}
+.bg2{left:150px;bottom:-230px;width:460px;height:460px;background:rgba(19,185,253,.10);clip-path:polygon(0 100%,100% 0,100% 46%,46% 100%)}
+.bg3{right:-120px;top:-160px;width:420px;height:420px;background:radial-gradient(circle at 50% 50%,rgba(84,197,248,.16),transparent 65%)}
+
+/* ---------- slides & transitions (RTL: next enters from the left) ---------- */
+.slide{position:absolute;inset:0;padding:90px 88px 64px;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transform:translateX(var(--enter));pointer-events:none;
+  transition:opacity .55s var(--ease),transform .55s var(--ease),visibility 0s linear .55s}
+.slide.active{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition-delay:0s}
+.slide.leaving{transform:translateX(var(--leave))}
+.slide::before{content:attr(data-kicker);position:absolute;top:34px;right:88px;font-size:24px;font-weight:700;color:var(--sky);letter-spacing:.2px}
+.slide::after{content:'ورشة Flutter المتقدمة · اليوم الرابع';position:absolute;bottom:26px;right:88px;font-size:22px;font-weight:500;color:#C9D6E3}
+
+/* ---------- staggered entrance ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.slide.active .a{animation:rise .7s var(--ease) both;animation-delay:calc(var(--i,0)*90ms + 120ms)}
+.slide.active .ln{animation:rise .45s var(--ease) both;animation-delay:calc(var(--pi,0)*90ms + var(--i,0)*38ms + 260ms)}
+
+/* ---------- typography ---------- */
+h1,h2,h3{margin:0;font-weight:800;line-height:1.2}
+h2{font-size:60px;margin-bottom:24px}
+h2 .en{font-family:var(--mono);font-weight:600;font-size:.78em;color:var(--sky);direction:ltr;unicode-bidi:isolate}
+.body{flex:1;min-height:0;display:flex;flex-direction:column}
+.cols{display:flex;gap:44px;flex:1;min-height:0;align-items:flex-start}
+.col{min-width:0}
+.col.text{flex:1}
+.col.code{flex:1.5}
+.cols.wide .col.code{flex:2}
+.cols.even .col.code{flex:1}
+.cols.diagram .col.text{flex:1.15}
+.cols.diagram .col.dia{flex:1;align-self:stretch}
+.cols.diagram.wd .col.text{flex:1}
+.cols.diagram.wd .col.dia{flex:1.25}
+.lead{font-size:34px;line-height:1.5;margin:0 0 22px;color:var(--ink)}
+.lead b{color:var(--sky)}
+ul.bul{list-style:none;margin:0;padding:0}
+ul.bul li{position:relative;font-size:32px;line-height:1.45;padding-right:40px;margin-bottom:16px}
+ul.bul li::before{content:'';position:absolute;right:6px;top:.62em;width:16px;height:16px;border-radius:5px;background:var(--sky);transform:rotate(45deg) scale(.9)}
+ul.bul li b{color:var(--sky);font-weight:700}
+ul.bul.tight li{font-size:30px;margin-bottom:12px}
+.ic{font-family:var(--mono);font-size:.86em;background:rgba(84,197,248,.12);border:1px solid rgba(84,197,248,.25);border-radius:8px;padding:1px 10px;margin:0 4px;direction:ltr;unicode-bidi:isolate;color:#CFE6FF;white-space:nowrap}
+.muted{color:var(--muted)}
+.note{font-size:28px;line-height:1.5;color:var(--muted);margin-top:12px}
+
+/* callouts */
+.warn,.tip,.key{border-radius:18px;padding:16px 22px;font-size:29px;line-height:1.45;margin-top:14px;border:1px solid}
+.warn{background:rgba(255,107,129,.10);border-color:rgba(255,107,129,.45)}
+.tip{background:rgba(46,230,166,.09);border-color:rgba(46,230,166,.4)}
+.key{background:rgba(255,193,8,.09);border-color:rgba(255,193,8,.45)}
+.warn b,.tip b,.key b{font-weight:800}
+.warn b{color:var(--rose)} .tip b{color:var(--teal)} .key b{color:var(--amber)}
+
+/* ---------- code blocks ---------- */
+pre.code{position:relative;margin:0;direction:ltr;text-align:left;background:var(--code);border:1px solid rgba(84,197,248,.24);
+  border-radius:20px;padding:46px 22px 20px;font:500 27px/1.36 var(--mono);color:#E6EEF7;overflow:hidden;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.35)}
+pre.code.sm{font-size:25px;padding-top:42px}
+pre.code::before{content:attr(data-file);position:absolute;top:0;right:0;font:500 19px/1 var(--mono);color:var(--muted);padding:10px 16px;background:rgba(255,255,255,.05);border-radius:0 19px 0 12px}
+pre.code::after{content:'';position:absolute;top:14px;left:18px;width:12px;height:12px;border-radius:50%;background:var(--rose);box-shadow:20px 0 0 var(--amber),40px 0 0 var(--teal)}
+pre.code code{display:block;white-space:pre}
+.ln{display:block;white-space:pre;min-height:1.36em}
+.kw{color:#FF8FB8}.ty{color:#8BE9FD}.st{color:#C3E88D}.nu{color:#FFD166}.cm{color:#AFC1D4;font-style:italic}.an{color:#FFC108}.fn{color:#D8EAFF}.ip{color:#FFD166}
+.cm[dir=rtl],.st[dir=rtl]{unicode-bidi:isolate}
+.ip{direction:ltr;unicode-bidi:isolate}
+.stack{display:flex;flex-direction:column;gap:18px;width:100%}
+
+/* run cue */
+.run{margin-top:auto;display:flex;align-items:center;gap:26px;align-self:flex-start;background:rgba(255,193,8,.10);border:1.5px solid rgba(255,193,8,.55);border-radius:16px;padding:12px 22px;font-size:29px}
+.run .lbl{font-weight:800;color:var(--amber);white-space:nowrap}
+.run .lbl::before{content:'▶';display:inline-block;margin-left:10px;font-size:.8em}
+.run code{direction:ltr;unicode-bidi:isolate;font-size:.92em;background:rgba(0,0,0,.35);padding:6px 14px;border-radius:10px;color:#FFE08A}
+.run .menu{color:#C9D6E3;font-size:1em;border-right:2px solid rgba(255,193,8,.4);padding-right:24px}
+.run .menu .ic{font-size:.9em}
+.body + .run{margin-top:22px}
+
+/* tables */
+table.tbl{width:100%;border-collapse:collapse;font-size:29px;line-height:1.4}
+table.tbl th{background:rgba(84,197,248,.14);color:var(--sky);font-weight:800;text-align:right;padding:14px 20px;border-bottom:2px solid rgba(84,197,248,.4)}
+table.tbl td{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.09);vertical-align:top}
+table.tbl tr:last-child td{border-bottom:0}
+table.tbl td.mono{font-family:var(--mono);direction:ltr;text-align:left;color:#CFE6FF;font-size:26px}
+table.tbl th.l{text-align:left;direction:ltr}
+table.tbl td b{color:var(--sky)}
+table.tbl .ok{color:var(--teal);font-weight:800} table.tbl .no{color:var(--rose);font-weight:800}
+
+/* chips / cards */
+.chips{display:flex;flex-wrap:wrap;gap:12px}
+.chips span{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-size:24px;padding:8px 18px;border-radius:999px;border:1px solid rgba(84,197,248,.4);background:rgba(84,197,248,.08);color:#CFE6FF}
+.cards{display:grid;gap:22px}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards.three{grid-template-columns:1fr 1fr 1fr}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:20px;padding:22px 26px}
+.card h3{font-size:32px;color:var(--sky);margin-bottom:12px}
+.card h3 .ic{font-size:.8em}
+.card p,.card li{font-size:28px;line-height:1.45;margin:0}
+.card ol,.card ul{margin:0;padding-right:28px}
+.card li{margin-bottom:8px}
+
+/* agenda */
+.agenda{display:grid;grid-template-columns:1fr 1fr;gap:30px;flex:1}
+.agenda .part{background:rgba(255,255,255,.035);border:1px solid rgba(84,197,248,.25);border-radius:24px;padding:26px 30px}
+.agenda h3{font-size:38px;color:var(--sky);margin-bottom:16px;display:flex;align-items:center;gap:14px}
+.agenda h3 .tag{font-family:var(--mono);font-size:24px;background:var(--deep);color:#fff;border-radius:10px;padding:4px 12px;direction:ltr}
+.agenda ol{margin:0;padding-right:34px;font-size:30px;line-height:1.55}
+.agenda li span{color:var(--muted);font-size:.85em}
+
+/* title + divider */
+.slide.title,.slide.divider{justify-content:center;align-items:flex-start}
+.slide.title::before,.slide.divider::before{content:none}
+.slide.title .kick,.slide.divider .kick{font-size:30px;color:var(--sky);font-weight:700;margin-bottom:18px}
+.slide.title h1{font-size:118px;letter-spacing:-.5px;margin-bottom:10px}
+.slide.title h1 .en{font-family:var(--mono);font-weight:600;color:var(--sky);direction:ltr;unicode-bidi:isolate;font-size:.9em}
+.slide.title h2{font-size:52px;font-weight:500;color:var(--muted);margin-bottom:44px}
+.slide.title .hint{margin-top:40px;color:var(--muted);font-size:26px}
+.slide.divider h1{font-size:120px}
+.slide.divider .big{font-size:64px;color:var(--sky);font-weight:800;margin-bottom:14px}
+.slide.divider .sub{font-size:34px;color:var(--muted);margin-top:16px;max-width:1300px;line-height:1.5}
+.mark{position:relative;width:150px;height:150px;margin-bottom:34px}
+.mark i{position:absolute;display:block}
+.mark .m1{left:0;top:0;width:150px;height:150px;background:var(--sky);clip-path:polygon(0 58%,58% 0,100% 0,0 100%)}
+.mark .m2{left:0;top:0;width:150px;height:150px;background:var(--deep);clip-path:polygon(42% 100%,100% 42%,100% 72%,72% 100%)}
+.mark .m3{left:0;top:0;width:150px;height:150px;background:#042B59;clip-path:polygon(42% 100%,57% 85%,72% 100%)}
+
+/* recap, exercises */
+.recap{display:grid;grid-template-columns:1fr 1fr;gap:34px;flex:1}
+.recap .part h3{font-size:34px;color:var(--sky);margin-bottom:14px}
+.recap ul{list-style:none;margin:0;padding:0}
+.recap li{font-size:28px;line-height:1.45;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.recap li b{color:var(--ink);font-weight:800}
+.recap li .ic{font-size:.82em}
+.ex{counter-reset:ex;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:18px 26px}
+.ex li{counter-increment:ex;position:relative;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:18px;padding:18px 84px 18px 22px;font-size:28px;line-height:1.45}
+.ex li::before{content:counter(ex);position:absolute;right:20px;top:16px;width:46px;height:46px;border-radius:12px;background:var(--amber);color:#042B59;font-weight:800;font-size:28px;display:flex;align-items:center;justify-content:center}
+.ex li.wide{grid-column:1/-1}
+
+/* day 2 preview */
+.next{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:10px}
+.next .card h3{font-size:40px}
+.next .card li{font-size:29px}
+
+/* timing bars (slide 5) */
+.bars{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+.bars .bar span{display:block;font-size:27px;margin-bottom:6px;color:var(--muted)}
+.bars .bar i{display:block;width:var(--w);font-style:normal;font-family:var(--mono);font-size:24px;padding:8px 16px;border-radius:10px;background:linear-gradient(90deg,var(--deep),var(--sky));color:#042B59;font-weight:600;direction:ltr;text-align:left;transform-origin:right}
+.slide.active .bars .bar i{animation:grow .9s var(--ease) both;animation-delay:calc(var(--i,0)*90ms + 500ms)}
+@keyframes grow{from{transform:scaleX(0)}to{transform:none}}
+
+/* layer stack (DI) */
+.layers{display:flex;flex-direction:column;gap:10px}
+.layers .ly{background:var(--card);border:1.5px solid rgba(84,197,248,.4);border-radius:14px;padding:12px 18px;font-size:27px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.layers .ly code{color:#CFE6FF;font-size:24px;direction:ltr}
+.layers .arrow{text-align:center;color:var(--sky);font-size:26px;line-height:1}
+
+/* class-modifier mini table */
+.mods{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:center;font-size:28px}
+.mods code{font-size:26px;color:var(--amber);direction:ltr}
+
+/* ============================================================
+   Diagrams (base CSS = final state; .play adds motion)
+   ============================================================ */
+.diagram{position:relative;width:100%;height:100%}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes dim{from{opacity:1}to{opacity:.3}}
+
+/* 1) event loop */
+.el{display:flex;flex-direction:column;gap:6px}
+.el .lane{display:flex;align-items:center;gap:22px;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.25);border-radius:16px;padding:10px 20px;min-height:86px}
+.el .lane.ev{border-color:rgba(255,193,8,.4)}
+.el .lt{width:330px;flex:none;font-size:25px;color:var(--sky);font-weight:700;line-height:1.2}
+.el .lt small{display:block;font:500 19px/1.3 var(--sans);color:#C9D6E3;margin-top:4px}
+.el .lane.ev .lt{color:var(--amber)}
+.el .chips{gap:10px}
+.el .chip{font:700 27px/1 var(--mono);background:var(--deep);color:#fff;padding:13px 18px;border-radius:12px;border:0}
+.el .lane.ev .chip{background:#8a6400}
+.el .larrow{display:flex;align-items:center;gap:14px;padding:0 44px;color:var(--amber);font-size:20px;line-height:1.2}
+.el .larrow i{font-style:normal;font-size:34px;line-height:1}
+.el .larrow b{font-weight:800}
+.el .console{flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:8px;background:var(--code);border-radius:16px;padding:10px 22px;font:500 26px/1.45 var(--mono);direction:ltr;text-align:left;border:1px solid rgba(84,197,248,.2)}
+.el .console .ct{color:#C9D6E3;font-family:var(--sans);direction:rtl;text-align:right;font-size:22px;margin-bottom:4px}
+.el .o{color:#C3E88D;unicode-bidi:isolate} .el .o.ev{color:#FFD166}
+.play.el .chip{animation:pop .4s both var(--d),dim .5s forwards var(--dc)}
+.play.el .o{animation:fadein .35s both var(--d)}
+
+/* 4) riverpod graph (fixed 900x640 coordinate space) */
+.rp{width:940px;height:760px}
+.rp .scope{position:absolute;left:0;right:0;top:0;height:470px;border:2px dashed rgba(84,197,248,.65);border-radius:26px}
+.rp .scope-title{position:absolute;top:-22px;right:34px;background:var(--bg);padding:0 14px;color:var(--sky);font:800 27px var(--sans)}
+.rp .scope-title code{color:var(--sky)}
+.rp .node,.rp .wnode{position:absolute;background:var(--card);border:2px solid var(--sky);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 12px}
+.rp .node{width:300px;height:130px}
+.rp .node b,.rp .wnode b{font:700 27px var(--mono);direction:ltr;unicode-bidi:isolate;color:var(--ink)}
+.rp .node small,.rp .wnode small{font:500 23px/1.3 var(--sans);color:#D5E1EC;text-align:center}
+.rp .wnode small{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-size:20px}
+.rp .p1{top:90px;right:50px}
+.rp .p2{top:90px;left:50px}
+.rp .p3{top:300px;left:300px;width:340px;border-color:var(--teal)}
+.rp .wnode{top:550px;width:430px;height:150px;border-color:rgba(255,255,255,.45)}
+.rp .w1{right:30px}
+.rp .w2{left:30px}
+.rp .flag{position:absolute;top:-18px;left:16px;background:var(--amber);color:#042B59;font:800 20px var(--sans);padding:3px 12px;border-radius:999px;opacity:0}
+.rp svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.rp svg line,.rp svg path{stroke:rgba(255,255,255,.45);stroke-width:3;fill:none;marker-start:url(#dot);marker-end:url(#arr)}
+.rp svg text{fill:#C9D6E3;font:600 20px var(--mono);direction:ltr;text-anchor:start}
+.rp .pulse{position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--amber);box-shadow:0 0 18px var(--amber);opacity:0;offset-rotate:0deg}
+.rp .pu1{offset-path:path('M245 550 L160 220')}
+.rp .pu2{offset-path:path('M300 220 L380 300')}
+.rp .pu3{offset-path:path('M470 430 L695 550')}
+.play.rp .pulse{animation:travel .8s linear both;animation-delay:var(--d)}
+.play.rp .flash{animation:flash 1s both var(--d)}
+.play.rp .flag{animation:flagin 1.4s both var(--d)}
+@keyframes travel{0%{offset-distance:0%;opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+@keyframes flash{0%{box-shadow:none}30%{box-shadow:0 0 0 5px var(--amber),0 0 40px var(--amber)}100%{box-shadow:none}}
+@keyframes flagin{0%{opacity:0;transform:translateY(8px)}20%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+
+/* 5) autoDispose */
+.ad{display:flex;gap:26px}
+.ad .screens{display:flex;flex-direction:column;align-items:center;gap:8px;width:330px}
+.ad .scr{width:300px;border:3px solid rgba(255,255,255,.28);border-radius:20px;overflow:hidden;background:#0d2440}
+.ad .bar{background:var(--deep);padding:7px 12px;font:700 20px var(--mono);direction:ltr;text-align:left;white-space:nowrap}
+.ad .scr ul{list-style:none;margin:0;padding:8px 14px;font-size:24px}
+.ad .scr li{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ad .scr li.hi{color:var(--sky);font-weight:700}
+.ad .scr .bd{padding:14px;font-size:24px;line-height:1.5;text-align:center}
+.ad .nav{display:flex;gap:26px;font-size:24px;color:#C9D6E3;font-weight:700}
+.ad .nav span{padding:4px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2)}
+.ad .store{flex:1;border:2px dashed rgba(84,197,248,.65);border-radius:24px;padding:36px 22px 22px;position:relative;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.ad .stt{position:absolute;top:-20px;right:28px;background:var(--bg);padding:0 12px;color:var(--sky);font-weight:800;font-size:25px}
+.ad .pv{background:var(--card);border:2px solid var(--sky);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ad .pv b{font:700 25px var(--mono);direction:ltr;unicode-bidi:isolate;flex-basis:100%;color:var(--ink)}
+.ad .s{font-size:24px;padding:5px 14px;border-radius:999px;background:rgba(255,255,255,.08)}
+.ad .s.drop{background:rgba(255,107,129,.15)} .ad .s.keep{background:rgba(255,193,8,.15)} .ad .s.create{background:rgba(46,230,166,.15)}
+.ad .log{font:500 27px/1.5 var(--mono);direction:ltr;text-align:left;color:#C9D6E3;background:var(--code);border-radius:12px;padding:12px 16px}
+.play.ad .s1{animation:scrA 9s both}
+.play.ad .s2{animation:scrB 9s both}
+.play.ad .push{animation:navP 9s both} .play.ad .pop{animation:navQ 9s both}
+.play.ad .pv1{animation:life1 9s both} .play.ad .pv2{animation:life2 9s both}
+.play.ad .s{opacity:0}
+.play.ad .s.c1{animation:chipA 9s both} .play.ad .s.k1{animation:chipK 9s both}
+.play.ad .s.d2{animation:chipD2 9s both} .play.ad .s.d1{animation:chipD1 9s both}
+@keyframes scrA{0%,12%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}16%,40%{border-color:rgba(255,255,255,.28);box-shadow:none}44%,100%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}}
+@keyframes scrB{0%,12%{border-color:rgba(255,255,255,.28);box-shadow:none}16%,40%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}44%,100%{border-color:rgba(255,255,255,.28);box-shadow:none}}
+@keyframes navP{0%,10%{color:var(--muted)}13%,17%{color:var(--amber);border-color:var(--amber)}22%,100%{color:var(--muted)}}
+@keyframes navQ{0%,38%{color:var(--muted)}41%,45%{color:var(--amber);border-color:var(--amber)}50%,100%{color:var(--muted)}}
+@keyframes life1{0%,15%{opacity:0;transform:translateY(14px)}19%,80%{opacity:1;transform:none}86%,100%{opacity:.18}}
+@keyframes life2{0%,15%{opacity:0;transform:translateY(14px)}19%,46%{opacity:1;transform:none}52%,100%{opacity:.18}}
+@keyframes chipA{0%,17%{opacity:0}21%,100%{opacity:1}}
+@keyframes chipK{0%,47%{opacity:0}51%,100%{opacity:1}}
+@keyframes chipD2{0%,47%{opacity:0}51%,100%{opacity:1}}
+@keyframes chipD1{0%,81%{opacity:0}85%,100%{opacity:1}}
+
+
+/* ---------- v2: lesson header + Dart/Riverpod tags ---------- */
+.lh{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.lh .num{width:50px;height:50px;border-radius:14px;background:var(--sky);color:#042B59;font:800 30px var(--mono);display:flex;align-items:center;justify-content:center;flex:none}
+.lh .lt{font-size:30px;font-weight:700;color:var(--sky)}
+.tag{font:700 21px var(--mono);padding:3px 14px;border-radius:999px;border:1.5px solid;direction:ltr;unicode-bidi:isolate;vertical-align:middle}
+.tag.dart{color:var(--amber);border-color:var(--amber)}
+.tag.riv{color:var(--teal);border-color:var(--teal)}
+/* agenda lesson cards */
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
+.lcard{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:16px;padding:12px 18px;min-width:0}
+.lcard .num{width:48px;height:48px;border-radius:12px;background:var(--deep);color:#fff;font:800 28px var(--mono);display:flex;align-items:center;justify-content:center;flex:none}
+.lcard.dart .num{background:var(--amber);color:#042B59}
+.lcard .t{font-size:30px;font-weight:700;flex:1;min-width:0}
+.lcard .t .tag{font-size:19px;margin-right:10px}
+.lcard .f{font:500 20px var(--mono);color:#C9D6E3;direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+/* tips slides (amber identity, visible in the O overview) */
+.slide.tips::before{color:var(--amber)}
+.slide.tips h2{color:var(--amber)}
+.tipbar{position:absolute;top:0;right:0;bottom:0;width:14px;background:linear-gradient(180deg,var(--amber),rgba(255,193,8,.15))}
+.tiplist{display:flex;flex-direction:column;gap:14px}
+.tipcard{display:flex;gap:20px;align-items:flex-start;background:rgba(255,193,8,.07);border:1px solid rgba(255,193,8,.35);border-radius:18px;padding:14px 20px}
+.tipcard .n{flex:none;width:46px;height:46px;border-radius:50%;background:var(--amber);color:#042B59;font:800 26px var(--mono);display:flex;align-items:center;justify-content:center;margin-top:2px}
+.tipcard .tx{flex:1;min-width:0;font-size:29px;line-height:1.45}
+.tipcard .tx .ic{font-size:.84em}
+.tipcard pre.code{margin-top:10px}
+pre.code.tip{padding:12px 20px 10px;font-size:24px;box-shadow:none;border-color:rgba(255,193,8,.3)}
+pre.code.tip::before,pre.code.tip::after{display:none}
+/* FutureBuilder: rebuild -> new request counter */
+.fb{display:flex;flex-direction:column;gap:16px;justify-content:center}
+.fb .fbbtn{align-self:center;max-width:100%;background:var(--deep);color:#fff;border-radius:14px;padding:10px 24px;font:700 25px var(--sans);display:flex;gap:14px;align-items:center;text-align:center;line-height:1.35}
+.fb .fbbtn code{color:#FFE08A;direction:ltr;unicode-bidi:isolate}
+.fb .fbpanels{display:flex;gap:16px}
+.fb .fbp{flex:1;min-width:0;border-radius:18px;padding:14px 18px;border:2px solid;display:flex;flex-direction:column;gap:10px}
+.fb .fbp.bad{border-color:var(--rose);background:rgba(255,107,129,.08)}
+.fb .fbp.good{border-color:var(--teal);background:rgba(46,230,166,.08)}
+.fb h4{margin:0;font-size:25px;line-height:1.3}
+.fb .reqs{display:flex;gap:8px;font-size:38px;min-height:52px;line-height:1.3}
+.fb .reqs i{font-style:normal}
+.fb .cnt{position:relative;min-height:44px;font-size:26px;font-weight:700}
+.fb .cnt b{position:absolute;right:0;top:0;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fb .good .cnt b{position:static;display:block}
+.fb .cnt b.c1,.fb .cnt b.c2,.fb .cnt b.c3{opacity:0}
+.play.fb .reqs i{animation:pop .4s both var(--d)}
+.play.fb .fbbtn{animation:btnpulse 1s 4 .3s}
+.play.fb .cnt .c1{animation:kc1 6s both}.play.fb .cnt .c2{animation:kc2 6s both}.play.fb .cnt .c3{animation:kc3 6s both}.play.fb .cnt .c4{animation:kc4 6s both}
+@keyframes btnpulse{0%,100%{box-shadow:none;transform:none}30%{box-shadow:0 0 0 6px rgba(255,193,8,.5);transform:scale(1.04)}}
+@keyframes kc1{0%,9%{opacity:0}10%,25%{opacity:1}26%,100%{opacity:0}}
+@keyframes kc2{0%,25%{opacity:0}26%,42%{opacity:1}43%,100%{opacity:0}}
+@keyframes kc3{0%,42%{opacity:0}43%,59%{opacity:1}60%,100%{opacity:0}}
+@keyframes kc4{0%,59%{opacity:0}60%,100%{opacity:1}}
+.fb .bridge{background:rgba(84,197,248,.1);border:1px solid rgba(84,197,248,.4);border-radius:14px;padding:12px 18px;font-size:27px;line-height:1.45}
+/* ---------- v3 readability (floor 24px) + layout ---------- */
+.slide::before{font-size:26px}
+.slide::after{font-size:24px;color:#D5E1EC}
+.slide.title .hint{font-size:26px;color:#D5E1EC}
+.tag{font-size:23px;padding:4px 16px}
+.lcard .t .tag{font-size:23px}
+.lgrid{gap:22px 26px}
+.lcard{padding:22px 22px}
+.lcard .f{font-size:24px}
+.lcard .t{font-size:32px}
+.el .lt small{font-size:24px;color:#D5E1EC}
+.el .larrow{font-size:25px}
+.el .console .ct{font-size:24px}
+.rp .node small{font-size:25px;color:#E3ECF5}
+.rp .wnode small{font-size:24px;color:#E3ECF5}
+.rp svg text{font-size:24px;fill:#E3ECF5;font-weight:700}
+.rp svg line,.rp svg path{stroke:rgba(255,255,255,.7)}
+.fb h4{font-size:27px}
+.fb .cnt{font-size:27px}
+.fb .fbbtn{font-size:26px}
+.fb .bridge{font-size:30px;line-height:1.5;padding:18px 22px}
+.fb .fbp{padding:18px 20px;gap:14px}
+.fb .reqs{font-size:44px;min-height:60px}
+.fb{gap:22px}
+.next .card h3{font-size:42px;margin-bottom:16px}
+.next .card li{font-size:33px;line-height:1.5;margin-bottom:12px}
+.next .card{padding:28px 32px}
+.tag{font-size:24px}
+.lcard .t .tag{font-size:24px}
+.lcard{min-height:118px}
+bdi[dir=ltr]{font-family:var(--mono);font-weight:600;font-size:.95em}
+.el .larrow bdi[dir=ltr]{color:var(--amber)}
+.el .larrow .n{display:inline-flex;flex:none;width:40px;height:40px;border-radius:50%;background:var(--amber);color:#042B59;font:800 24px var(--mono);align-items:center;justify-content:center}
+.lcard{min-height:136px}
+/* run bar: several chips */
+.run code + code{margin-right:0}
+
+
+/* ============================================================
+   Day 4: tags + diagrams (testing pyramid, controller timeline,
+   intervals, sliver model, ring, breakpoints)
+   ============================================================ */
+.tag.test{color:var(--rose);border-color:var(--rose)}
+.tag.ui{color:var(--sky);border-color:var(--sky)}
+.lcard.test .num{background:#9C2F48}
+.lgrid.nine{gap:14px 26px}
+.lgrid.nine{grid-auto-rows:1fr}
+.lgrid.nine .lcard{min-height:100px;padding:12px 20px}
+.slide.title .chips span{font-size:28px}
+.slide.title .hint{font-size:28px}
+.slide.title::after{font-size:26px}
+.next.four{grid-template-columns:1fr 1fr;gap:22px}
+.next.four .card{padding:20px 28px}
+.next.four .card h3{font-size:38px;margin-bottom:8px}
+.next.four .card li{font-size:30px;margin-bottom:6px}
+.cards .card + .card{margin-top:0}
+.cards{margin-bottom:6px}
+.cols.diagram.wt .col.text{flex:1.45}
+
+/* testing pyramid */
+.pyr{display:flex;flex-direction:column;gap:22px;justify-content:center}
+.pyr .tri{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 64px}
+.pyr .lv{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:156px;clip-path:polygon(8% 0,92% 0,100% 100%,0 100%);text-align:center;color:#042B59}
+.pyr .lv b{font:800 34px/1.3 var(--mono);direction:ltr}
+.pyr .lv small{font:600 24px/1.2 var(--mono);direction:ltr;unicode-bidi:isolate}
+.pyr .lv .tm{font:800 24px/1.3 var(--sans);background:rgba(4,43,89,.16);border-radius:999px;padding:2px 16px}
+.pyr .l3{width:56%;background:var(--amber)}
+.pyr .l2{width:78%;background:var(--sky)}
+.pyr .l1{width:100%;background:var(--teal)}
+.pyr .side{position:absolute;top:0;bottom:0;width:40px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.pyr .side span{font-size:30px;line-height:1}
+.pyr .side i{flex:1;width:12px;border-radius:6px}
+.pyr .side.up{right:6px;color:var(--amber)}
+.pyr .side.up i{background:linear-gradient(0deg,rgba(255,193,8,.12),var(--amber));transform-origin:bottom}
+.pyr .side.dn{left:6px;color:var(--teal)}
+.pyr .side.dn i{background:linear-gradient(180deg,rgba(46,230,166,.12),var(--teal));transform-origin:top}
+.pyr .legend{display:flex;gap:18px;font-size:26px;line-height:1.35}
+.pyr .legend span{flex:1;border-radius:14px;padding:10px 16px;background:rgba(255,255,255,.05)}
+.pyr .legend .hi{border:1.5px solid var(--amber)}
+.pyr .legend .lo{border:1.5px solid var(--teal)}
+.play.pyr .lv{animation:pop .55s both var(--d)}
+.play.pyr .lv .tm{animation:fadein .4s both;animation-delay:calc(var(--d) + .6s)}
+.play.pyr .side i{animation:growy 1s both 3.1s}
+.play.pyr .side span{animation:fadein .4s both 3.8s}
+.play.pyr .legend span{animation:fadein .5s both 4s}
+@keyframes growy{from{transform:scaleY(0)}to{transform:none}}
+
+/* AnimationController timeline */
+.act{display:flex;flex-direction:column;gap:4px;justify-content:center}
+.act .lane{display:flex;align-items:center;gap:20px;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.25);border-radius:16px;padding:10px 20px;min-height:104px}
+.act .lt{width:230px;flex:none;font:800 27px/1.2 var(--mono);color:var(--sky)}
+.act .lt small{display:block;font:500 24px/1.3 var(--sans);color:#D5E1EC;margin-top:4px}
+.act .viz{flex:1;min-width:0;position:relative;direction:ltr}
+.act .ticks{display:flex;flex-wrap:nowrap;gap:8px}
+.act .ticks i{flex:none;width:20px;height:20px;border-radius:50%;background:var(--amber)}
+.act .trk{position:relative;height:32px}
+.act .trk::before{content:'';position:absolute;left:0;right:0;top:12px;height:8px;border-radius:4px;background:rgba(255,255,255,.16)}
+.act .dot{position:absolute;top:0;left:calc(100% - 32px);width:32px;height:32px;border-radius:50%}
+.act .dot.lin{background:var(--sky);box-shadow:0 0 16px var(--sky)}
+.act .dot.cur{background:var(--amber);box-shadow:0 0 16px var(--amber)}
+.act .scale{display:flex;justify-content:space-between;font:600 24px/1.3 var(--mono);color:#C9D6E3;margin-top:4px}
+.act .viz.w{height:90px;display:flex;align-items:center;gap:24px;padding-left:14px}
+.act .cap{font:600 24px/1.3 var(--mono);color:#D5E1EC}
+.act .wdg{flex:none;width:62px;height:62px;border-radius:16px;background:var(--sky);display:flex;align-items:center;justify-content:center;font-size:38px;transform:rotate(360deg) scale(1.2)}
+.act .ar{text-align:center;color:var(--amber);font-size:25px;line-height:1.2}
+.play.act .ticks i{animation:tickon .3s both;animation-delay:calc(var(--k)*.16s + .3s)}
+.play.act .dot.lin{animation:slide 2s linear both .4s}
+.play.act .dot.cur{animation:slide 2s cubic-bezier(.175,.885,.32,1.275) both .4s}
+.play.act .wdg{animation:spin 2s cubic-bezier(.175,.885,.32,1.275) both .4s}
+@keyframes tickon{0%{background:rgba(255,255,255,.14);transform:scale(.6)}60%{transform:scale(1.3)}100%{background:var(--amber);transform:none}}
+@keyframes slide{from{left:0}to{left:calc(100% - 32px)}}
+@keyframes spin{from{transform:rotate(0) scale(.6)}to{transform:rotate(360deg) scale(1.2)}}
+
+/* Interval bars */
+.ivl{display:flex;flex-direction:column;gap:12px;margin-top:18px;direction:ltr}
+.ivl .row{display:flex;align-items:center;gap:14px}
+.ivl .row b{width:100px;flex:none;font:700 24px var(--mono);color:var(--sky);text-align:left}
+.ivl .tr{position:relative;flex:1;height:46px;border-radius:10px;background:rgba(255,255,255,.07)}
+.ivl .seg{position:absolute;top:0;bottom:0;left:var(--s);width:var(--w);border-radius:10px;background:linear-gradient(90deg,var(--deep),var(--sky));transform-origin:left;font:700 24px/46px var(--mono);color:#042B59;text-align:center;white-space:nowrap}
+.ivl .axis{display:flex;justify-content:space-between;font:500 24px var(--mono);color:#C9D6E3;padding-left:114px}
+.play.ivl .seg{animation:grow .8s var(--ease) both;animation-delay:var(--d)}
+
+/* sliver scroll model */
+.slv{display:flex;gap:26px;align-items:center;justify-content:center}
+.slv .ph{position:relative;flex:none;width:360px;height:640px;border:4px solid rgba(255,255,255,.3);border-radius:34px;overflow:hidden;background:#0d2440}
+.slv .sab{position:absolute;left:0;right:0;top:0;height:76px;background:linear-gradient(180deg,var(--deep),#0b4f86);display:flex;align-items:flex-end;padding:0 18px 16px;font:800 26px/1.2 var(--sans);z-index:3}
+.slv .pin{position:absolute;left:0;right:0;top:76px;height:52px;background:#16406b;border-bottom:2px solid var(--sky);font:700 24px/1.2 var(--sans);display:flex;align-items:center;padding:0 18px;z-index:2}
+.slv .scr{position:absolute;left:0;right:0;top:128px;bottom:0;overflow:hidden}
+.slv .trk{margin-top:-300px}
+.slv .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;height:224px}
+.slv .grid i{font-style:normal;display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(84,197,248,.18);font-size:24px}
+.slv .li{height:68px;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid rgba(255,255,255,.08);font-size:24px}
+.slv .steps{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.slv .st{border:1.5px solid rgba(84,197,248,.25);background:rgba(255,255,255,.04);border-radius:16px;padding:12px 16px;font-size:25px;line-height:1.4}
+.slv .st b{display:block;font:700 24px var(--mono);color:var(--amber);direction:ltr;text-align:right}
+.play.slv .sab{animation:sabH 9s var(--ease) both}
+.play.slv .pin{animation:pinT 9s var(--ease) both}
+.play.slv .scr{animation:scrT 9s var(--ease) both}
+.play.slv .trk{animation:trkY 9s var(--ease) both}
+.play.slv .s1{animation:hl1 9s both}.play.slv .s2{animation:hl2 9s both}.play.slv .s3{animation:hl3 9s both}
+@keyframes sabH{0%,10%{height:236px}45%,100%{height:76px}}
+@keyframes pinT{0%,10%{top:236px}45%,100%{top:76px}}
+@keyframes scrT{0%,10%{top:288px}45%,100%{top:128px}}
+@keyframes trkY{0%,48%{margin-top:0}82%,100%{margin-top:-300px}}
+@keyframes hl1{0%,12%{border-color:var(--amber);background:rgba(255,193,8,.12)}18%,100%{border-color:rgba(84,197,248,.25);background:rgba(255,255,255,.04)}}
+@keyframes hl2{0%,38%{border-color:rgba(84,197,248,.25);background:rgba(255,255,255,.04)}44%,55%{border-color:var(--amber);background:rgba(255,193,8,.12)}60%,100%{border-color:rgba(84,197,248,.25);background:rgba(255,255,255,.04)}}
+@keyframes hl3{0%,70%{border-color:rgba(84,197,248,.25);background:rgba(255,255,255,.04)}78%,100%{border-color:var(--amber);background:rgba(255,193,8,.12)}}
+
+/* progress ring */
+.ring{display:flex;align-items:center;gap:28px;margin-top:10px}
+.ring .rbox{position:relative;flex:none;width:280px;height:280px}
+.ring svg{display:block;width:280px;height:280px}
+.ring .rt{fill:none;stroke:rgba(255,255,255,.14);stroke-width:22}
+.ring .ra{fill:none;stroke:var(--sky);stroke-width:22;stroke-linecap:round;stroke-dasharray:65 100;transform:rotate(-90deg);transform-origin:150px 150px}
+.ring .rl{position:absolute;left:0;right:0;top:104px;text-align:center;font:800 52px/1.35 var(--mono)}
+.ring .rnote{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;font-size:26px;line-height:1.4}
+.ring .rnote span{border-radius:12px;padding:8px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(84,197,248,.25)}
+.play.ring .ra{animation:sweep 1.6s var(--ease) both .3s}
+@keyframes sweep{from{stroke-dasharray:0 100}to{stroke-dasharray:65 100}}
+
+/* breakpoints (container queries) */
+.rsp{display:flex;flex-direction:column;gap:18px;justify-content:center;align-items:flex-start;direction:ltr}
+.rsp .win{container-type:inline-size;width:100%;border:3px solid rgba(255,255,255,.3);border-radius:18px;overflow:hidden;background:#0d2440}
+.rsp .wbar{display:flex;gap:8px;padding:10px 14px;background:rgba(255,255,255,.06)}
+.rsp .wbar i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.3)}
+.rsp .wbody{display:flex;height:300px}
+.rsp .rail{flex:none;width:150px;display:flex;flex-direction:column;gap:12px;padding:16px 14px;background:rgba(84,197,248,.12)}
+.rsp .rail i,.rsp .bnav i{display:block;height:30px;border-radius:8px;background:rgba(84,197,248,.45)}
+.rsp .main{flex:1;min-width:0;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px;align-content:start}
+.rsp .main i{display:block;height:58px;border-radius:10px;background:var(--deep)}
+.rsp .side{flex:none;width:150px;display:flex;align-items:center;justify-content:center;background:rgba(255,193,8,.14);font-size:24px;direction:rtl}
+.rsp .bnav{display:none;gap:12px;padding:12px 16px;background:rgba(84,197,248,.12)}
+.rsp .bnav i{flex:1}
+.rsp .wl{direction:rtl;align-self:stretch;display:flex;flex-direction:column;gap:8px;font-size:25px;line-height:1.35}
+.rsp .wl span{border-radius:12px;padding:6px 14px;border:1.5px solid rgba(84,197,248,.25)}
+.rsp .wl b{font:700 24px var(--mono);color:var(--amber);direction:ltr;unicode-bidi:isolate;margin-left:8px}
+.rsp .wl .e{border-color:var(--amber);background:rgba(255,193,8,.1)}
+@container (max-width:600px){.rsp .side{display:none}.rsp .rail{width:70px}.rsp .main{grid-template-columns:repeat(3,1fr)}}
+@container (max-width:420px){.rsp .rail{display:none}.rsp .bnav{display:flex}.rsp .main{grid-template-columns:repeat(2,1fr)}}
+.play.rsp .win{animation:winW 9s var(--ease) both}
+.play.rsp .wl .e{animation:wlE 9s both}.play.rsp .wl .m{animation:wlM 9s both}.play.rsp .wl .c{animation:wlC 9s both}
+@keyframes winW{0%,22%{width:100%}32%,55%{width:72%}65%,90%{width:50%}100%{width:100%}}
+@keyframes wlE{0%,22%,92%,100%{border-color:var(--amber);background:rgba(255,193,8,.1)}27%,90%{border-color:rgba(84,197,248,.25);background:transparent}}
+@keyframes wlM{0%,27%{border-color:rgba(84,197,248,.25);background:transparent}32%,55%{border-color:var(--amber);background:rgba(255,193,8,.1)}60%,100%{border-color:rgba(84,197,248,.25);background:transparent}}
+@keyframes wlC{0%,60%{border-color:rgba(84,197,248,.25);background:transparent}65%,90%{border-color:var(--amber);background:rgba(255,193,8,.1)}95%,100%{border-color:rgba(84,197,248,.25);background:transparent}}
+
+/* ---------- presenter chrome ---------- */
+#progress{position:fixed;top:0;right:0;height:6px;width:0;background:linear-gradient(90deg,var(--deep),var(--sky));z-index:50;transition:width .4s var(--ease)}
+#counter{position:fixed;bottom:14px;left:18px;z-index:50;font:600 16px var(--mono);color:#C9D6E3;direction:ltr;background:rgba(6,26,46,.7);padding:4px 10px;border-radius:8px;letter-spacing:.5px;transition:opacity .4s}
+#nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:8px;opacity:.35;transition:opacity .3s}
+#nav:hover{opacity:1}
+body.idle #nav,body.idle #counter{opacity:0;pointer-events:none}
+#nav button{background:rgba(6,26,46,.8);border:1px solid rgba(84,197,248,.4);color:var(--sky);width:40px;height:34px;border-radius:8px;font-size:18px;cursor:pointer}
+#overview{position:fixed;inset:0;z-index:100;background:rgba(3,14,26,.96);overflow:auto;padding:28px;display:none}
+#overview.open{display:block}
+#overview .grid{display:grid;gap:18px;grid-template-columns:repeat(5,1fr)}
+#overview .thumb{position:relative;aspect-ratio:16/9;border:2px solid rgba(255,255,255,.15);border-radius:10px;overflow:hidden;cursor:pointer;background:var(--bg);transition:border-color .2s,transform .2s}
+#overview .thumb:hover{border-color:var(--sky);transform:scale(1.03)}
+#overview .thumb.cur{border-color:var(--amber)}
+#overview .thumb .num{position:absolute;bottom:6px;left:8px;z-index:2;font:700 13px var(--mono);color:#fff;background:rgba(0,0,0,.6);padding:2px 7px;border-radius:6px;direction:ltr}
+#overview .thumb .slide{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;opacity:1;visibility:visible;transition:none;pointer-events:none}
+#overview .slide .a,#overview .slide .ln,#overview .diagram *{animation:none!important;opacity:1}
+#overview .slide .flag,#overview .slide .pulse{opacity:0!important}
+#overview .thumb .diagram .s{opacity:1}
+
+/* ---------- static / reduced motion ---------- */
+html.static *,html.static *::before,html.static *::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#audit{display:none}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage">
+<div class="bgshape bg1"></div><div class="bgshape bg2"></div><div class="bgshape bg3"></div>
+
+<!-- ================= 1 TITLE ================= -->
+<section class="slide title">
+  <div class="mark a"><i class="m1"></i><i class="m2"></i><i class="m3"></i></div>
+  <div class="kick a">المستوى الثاني · ورشة عملية على 5 أيام</div>
+  <h1 class="a">ورشة <span class="en">Flutter</span> المتقدمة</h1>
+  <h2 class="a">اليوم الرابع — الاختبارات + واجهات متقدمة (+ درس Dart قصير: Extension methods)</h2>
+  <div class="chips a"><span>Flutter 3.47.9</span><span>Dart 3.13.7</span><span>flutter_riverpod 3.5.0</span><span>mocktail 1.0.5</span><span>intl 0.20.3</span><span>integration_test</span></div>
+  <div class="hint a">→ أو Space للتقدّم · O نظرة عامة على الشرائح · F ملء الشاشة</div>
+</section>
+
+<!-- ================= 2 AGENDA ================= -->
+<section class="slide" data-kicker="برنامج اليوم">
+  <h2 class="a">9 دروس — رقم واحد في العرض والقائمة والملف</h2>
+  <div class="body">
+    <div class="lgrid nine">
+      <div class="lcard dart a"><span class="num">1</span><span class="t">Extension methods <span class="tag dart">Dart</span></span><span class="f">01_extension_methods.dart</span></div>
+      <div class="lcard test a"><span class="num">2</span><span class="t">Unit tests و mocktail <span class="tag test">Testing</span></span><span class="f">02_unit_tests.dart</span></div>
+      <div class="lcard test a"><span class="num">3</span><span class="t">اختبار Providers و Widgets <span class="tag test">Testing</span></span><span class="f">03_provider_widget_tests.dart</span></div>
+      <div class="lcard test a"><span class="num">4</span><span class="t">Integration tests <span class="tag test">Testing</span></span><span class="f">04_integration_tests.dart</span></div>
+      <div class="lcard a"><span class="num">5</span><span class="t">الأنيميشن <span class="tag ui">UI</span></span><span class="f">05_animations.dart</span></div>
+      <div class="lcard a"><span class="num">6</span><span class="t">Slivers <span class="tag ui">UI</span></span><span class="f">06_slivers.dart</span></div>
+      <div class="lcard a"><span class="num">7</span><span class="t">CustomPainter <span class="tag ui">UI</span></span><span class="f">07_custom_painter.dart</span></div>
+      <div class="lcard a"><span class="num">8</span><span class="t">Responsive و Theming <span class="tag ui">UI</span></span><span class="f">08_responsive_theming.dart</span></div>
+      <div class="lcard a"><span class="num">9</span><span class="t">الترجمة و RTL و الوصول <span class="tag ui">UI</span></span><span class="f">09_l10n_rtl_a11y.dart</span></div>
+    </div>
+    <div class="key a" style="margin-top:20px"><b>التشغيل مرة واحدة:</b> <span class="ic">flutter run</span> من مجلد <span class="ic">day4_examples</span> ثم اختر الدرس من القائمة — والاختبارات بأمر <span class="ic">flutter test</span>. كل درس: الفكرة ← الكود ← جرّبه ← <b style="color:var(--amber)">💡 حيل الدرس</b>.</div>
+  </div>
+</section>
+
+<!-- ================= 3 L1 OPENER ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">1</span><span class="lt">الدرس 1 · Extension methods</span><span class="tag dart">Dart</span></div>
+  <h2 class="a">دوال جديدة لأنواع موجودة — بدون وراثة وبدون تعديل الأصل</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">تعمل على أي نوع: <b>String · int · List · BuildContext</b> — حتى لو لم نكتبه نحن.</li>
+        <li class="a">تُستدعى كأنها جزء من النوع: <span class="ic">'ali@mail.com'.isValidEmail</span> و <span class="ic">2.seconds</span></li>
+        <li class="a"><b>Generic:</b> <span class="ic">extension ListX&lt;T&gt; on List&lt;T&gt;</span> ← getOrNull و groupBy.</li>
+        <li class="a"><b>Nullable:</b> <span class="ic">on String?</span> ← <span class="ic">nickname.orDefault()</span></li>
+      </ul>
+      <div class="tip a"><b>💡 في التطبيق:</b> كل زر ينفّذ مثالاً ويكتب النتيجة في «الكونسول» أسفل الشاشة.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_extension_methods.dart"><code>extension StringX on String {
+  // تحقق بسيط من البريد الإلكتروني (نستخدمه في نموذج الدرس 4)
+  bool get isValidEmail =&gt;
+      RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$').hasMatch(this);
+
+  // تقصير النص الطويل مع …
+  String truncate(int max) =&gt;
+      length &lt;= max ? this : '${substring(0, max)}…';
+}
+
+extension DurationX on int {
+  Duration get seconds =&gt; Duration(seconds: this);
+  Duration get ms =&gt; Duration(milliseconds: this);
+}
+// await Future.delayed(2.seconds) بدل Duration(seconds: 2)</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 4 L1: extension types ================= -->
+<section class="slide" data-kicker="الدرس 1 · Extension methods · Dart">
+  <h2 class="a"><span class="en">Extension types</span>: نوع جديد «مجاني» فوق نوع موجود</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>zero-cost:</b> لا كائن إضافي وقت التشغيل — UserId في الذاكرة مجرد int.</li>
+        <li class="a"><b>يمنع الخلط:</b> <span class="ic">loadUser(productId)</span> ← خطأ ترجمة رغم أن الاثنين int.</li>
+        <li class="a"><span class="ic">implements String</span> ← كل دوال String متاحة: <span class="ic">email.length</span></li>
+        <li class="a"><b>factory مع تحقق</b> ← لا يوجد Email غير صالح في التطبيق.</li>
+      </ul>
+      <div class="warn a"><b>⚠️ حماية وقت الترجمة فقط:</b> <span class="ic">userId is int</span> ← true. لا تعتمد عليه في is / as.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_extension_methods.dart"><code>extension type UserId(int value) {
+  UserId.parse(String raw) : value = int.parse(raw);
+  bool get isGuest =&gt; value == 0;
+}
+extension type ProductId(int value) {}
+
+String loadUser(UserId id) =&gt; 'تحميل المستخدم ${id.value}';
+// loadUser(productId); ← خطأ ترجمة! رغم أن الاثنين int ✅
+
+extension type Email._(String value) implements String {
+  factory Email(String raw) {
+    final v = raw.trim().toLowerCase();
+    if (!v.isValidEmail) throw FormatException('بريد غير صالح', raw);
+    return Email._(v);
+  }
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 5 L1: BuildContext ================= -->
+<section class="slide" data-kicker="الدرس 1 · Extension methods · Dart">
+  <h2 class="a">امتدادات <span class="en">BuildContext</span> — نستخدمها في كل دروس الـ UI</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">بدل <span class="ic">Theme.of(context).colorScheme</span> ← <span class="ic">context.colors</span></li>
+        <li class="a">بدل <span class="ic">MediaQuery.sizeOf(context)</span> ← <span class="ic">context.screenSize</span></li>
+        <li class="a">بدل ScaffoldMessenger…showSnackBar ← <span class="ic">context.showSnack('تم')</span></li>
+        <li class="a">في الدروس 5–9: الألوان في الأنيميشن والرسم، و SnackBar عند انتهاء الحركة، ثم امتدادات جديدة: <span class="ic">context.appColors</span> في الدرس 8 و <span class="ic">context.l10n</span> في الدرس 9.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_extension_methods.dart"><code>extension ContextX on BuildContext {
+  ColorScheme get colors =&gt; Theme.of(this).colorScheme;
+  TextTheme get textTheme =&gt; Theme.of(this).textTheme;
+
+  // sizeOf بدل of(this).size: يُعاد البناء عند تغيّر الحجم فقط
+  Size get screenSize =&gt; MediaQuery.sizeOf(this);
+
+  void showSnack(String message, {bool error = false}) {
+    ScaffoldMessenger.of(this)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: error ? colors.error : null,
+        ),
+      );
+  }
+}</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 1</span><code>lib/lessons/01_extension_methods.dart</code></div>
+</section>
+
+<!-- ================= 6 TIPS L1 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 1 · Extension methods">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 1</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">Dart 3 فيها امتدادات جاهزة في <span class="ic">dart:core</span> — لا تكتبها من جديد:
+<pre class="code tip" data-file="lib/lessons/01_extension_methods.dart"><code>list.firstOrNull · list.lastOrNull · list.elementAtOrNull(5)
+for (final (i, item) in list.indexed)</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">الـ extensions تعتمد على النوع الثابت (static type)، لذلك لا تعمل مع متغير <span class="ic">dynamic</span> ← خطأ وقت التشغيل NoSuchMethodError.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">تعارض اسمين من مكتبتين؟ استدعِ الـ extension باسمها صراحةً، أو أخفِ واحدة عند الاستيراد:
+<pre class="code tip" data-file="lib/lessons/01_extension_methods.dart"><code>StringX('flutter').capitalized
+import 'utils.dart' hide StringX;</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">ضع امتدادات BuildContext في ملف واحد (مثلاً <span class="ic">lib/core/context_x.dart</span>) واستوردها في كل الشاشات — كما تستورد الدروس 5–9 ملف الدرس 1.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 7 L2 OPENER: testing pyramid ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">2</span><span class="lt">الدرس 2 · Unit tests و mocktail</span><span class="tag test">Testing</span></div>
+  <h2 class="a">هرم الاختبارات: كثير من السريع، وقليل من البطيء</h2>
+  <div class="body"><div class="cols diagram">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>Unit:</b> دالة أو class وحدها — بدون شاشة وبدون شبكة. ميلي ثوانٍ ← نكتب منه الأكثر (الدرسان 2 و 3).</li>
+        <li class="a"><b>Widget:</b> شاشة حقيقية في بيئة وهمية: pumpWidget ← tap ← expect (الدرس 3).</li>
+        <li class="a"><b>Integration:</b> التطبيق كاملاً على جهاز حقيقي — أبطأ وأعلى ثقة (الدرس 4).</li>
+        <li class="a">الأول والثاني بأمر واحد: <span class="ic">flutter test</span></li>
+      </ul>
+      <div class="key a"><b>في مشروعنا:</b> 22 اختباراً في <span class="ic">test/</span> (18 unit + 4 widget) تنتهي في ثوانٍ، و 2 في <span class="ic">integration_test/</span> على الجهاز.</div>
+    </div>
+    <div class="col dia">
+      <div class="diagram pyr a" data-loop="8000">
+        <div class="tri">
+          <div class="side up"><span>▲</span><i></i></div>
+          <div class="side dn"><i></i><span>▼</span></div>
+          <div class="lv l3" style="--d:2.2s"><b>Integration</b><small>app_test.dart</small><span class="tm">اختباران · ثوانٍ على جهاز</span></div>
+          <div class="lv l2" style="--d:1.2s"><b>Widget</b><small>03_shop_widget_test</small><span class="tm">4 اختبارات · <bdi dir="ltr">≈ 100ms</bdi></span></div>
+          <div class="lv l1" style="--d:.2s"><b>Unit</b><small>02_cart · 02_product_repository</small><span class="tm">18 اختباراً · <bdi dir="ltr">≈ 1ms</bdi></span></div>
+        </div>
+        <div class="legend"><span class="hi">▲ للأعلى: ثقة أكبر، لكن أبطأ وأغلى</span><span class="lo">▼ للأسفل: أسرع وأرخص وعدد أكبر</span></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 8 L2: unit tests ================= -->
+<section class="slide" data-kicker="الدرس 2 · Unit tests و mocktail · Testing">
+  <h2 class="a">Unit test لمنطق السلة: <span class="en">group</span> · <span class="en">setUp</span> · <span class="en">expect</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>الكود المُختبَر:</b> <span class="ic">Cart</span> في ملف الدرس — immutable: كل عملية تعيد Cart جديدة.</li>
+        <li class="a"><b>group</b> يجمع، و<b>setUp</b> يعمل قبل كل test ← حالة نظيفة دائماً.</li>
+        <li class="a"><b>AAA:</b> Arrange (جهّز) ← Act (نفّذ) ← Assert (تحقّق).</li>
+        <li class="a">Matchers: <span class="ic">closeTo</span> <span class="ic">throwsArgumentError</span> <span class="ic">same</span> <span class="ic">isFalse</span></li>
+      </ul>
+      <div class="tip a"><b>💡</b> للخطأ نمرّر <b>دالة</b> وليس النتيجة: <span class="ic">() =&gt; cart.applyCoupon('FREE')</span></div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="test/02_cart_test.dart"><code>group('Cart', () {
+  late Cart cart;
+  // setUp: يعمل قبل كل test ← كل اختبار يبدأ من حالة نظيفة
+  setUp(() =&gt; cart = const Cart());
+
+  test('SAVE10 يخصم 10%', () {
+    cart = cart.add(keyboard).add(mouse).applyCoupon(' save10 ');
+    expect(cart.coupon, 'SAVE10');
+    // closeTo بدل == لأن الأرقام العشرية غير دقيقة
+    expect(cart.discount, closeTo(16.55, 0.001));
+  });
+
+  test('كوبون غير معروف يرمي ArgumentError', () {
+    expect(() =&gt; cart.applyCoupon('FREE'), throwsArgumentError);
+  });</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 9 L2: mocktail ================= -->
+<section class="slide" data-kicker="الدرس 2 · Unit tests و mocktail · Testing">
+  <h2 class="a"><span class="en">mocktail</span>: نستبدل الـ API بـ Mock ونتحكم بالرد</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>Mock</b> = class فارغة ترث Mock وتطبّق الواجهة — بدون توليد كود.</li>
+        <li class="a"><span class="ic">when(…).thenAnswer</span> للـ Future، و <span class="ic">thenThrow</span> لمحاكاة خطأ الشبكة.</li>
+        <li class="a"><span class="ic">verify(…).called(1)</span> كم مرة نُوديت؟ و <span class="ic">verifyNever</span> لم تُستدعَ أبداً.</li>
+        <li class="a">الـ Repository يأخذ ProductApi عبر الـ constructor ← نحقن الـ Mock بسهولة.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="test/02_product_repository_test.dart"><code>class MockProductApi extends Mock implements ProductApi {}
+
+setUp(() {
+  api = MockProductApi();
+  repo = ProductRepository(api); // نحقن الـ Mock عبر الـ constructor
+});
+
+test('الكاش: نداءان للـ Repository = طلب واحد للـ API', () async {
+  when(() =&gt; api.fetchProducts()).thenAnswer((_) async =&gt; []);
+  await repo.getProducts();
+  await repo.getProducts();
+  // verify: نتحقق كم مرة نُوديت الدالة
+  verify(() =&gt; api.fetchProducts()).called(1);
+});</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 2</span><code>lib/lessons/02_unit_tests.dart</code><code>flutter test test/02_product_repository_test.dart</code></div>
+</section>
+
+<!-- ================= 10 TIPS L2 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 2 · Unit tests و mocktail">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 2</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">شغّل اختباراً واحداً بالاسم بدل الملف كله:
+<pre class="code tip" data-file="lib/lessons/02_unit_tests.dart"><code>flutter test --plain-name 'SAVE10'</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">الأرقام العشرية: لا تقارن double بـ <span class="ic">==</span> بل بـ closeTo:
+<pre class="code tip" data-file="lib/lessons/02_unit_tests.dart"><code>expect(cart.total, closeTo(148.95, 0.001));</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">mocktail: دالة تأخذ باراميتر من نوع خاص مع <span class="ic">any()</span> تحتاج <span class="ic">registerFallbackValue(FakeProduct())</span> داخل setUpAll — وإلا يظهر خطأ واضح.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx"><b>Fake أم Mock؟</b> Fake = تنفيذ بسيط حقيقي (FakeWeatherRepository في اليوم الأول)، و Mock = نتحكم بالرد ونتحقق من النداءات. استخدم Mock عندما يهمّك «كم مرة نُودي».</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 11 L3 OPENER: provider tests ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">3</span><span class="lt">الدرس 3 · اختبار Providers و Widgets</span><span class="tag test">Testing</span></div>
+  <h2 class="a">اختبار الـ Providers: <span class="en">ProviderContainer.test</span> + overrides</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <div class="layers a">
+        <div class="ly"><span>الشبكة (نستبدله بـ Mock)</span><code>productApiProvider</code></div>
+        <div class="arrow">↓ ref.watch</div>
+        <div class="ly"><span>JSON ← Models + كاش</span><code>productRepositoryProvider</code></div>
+        <div class="arrow">↓ ref.watch</div>
+        <div class="ly"><span>AsyncValue للشاشة</span><code>productsProvider</code></div>
+      </div>
+      <div class="key a"><b>📌</b> نستبدل أدنى طبقة فقط ← كل ما فوقها يعمل بالكود الحقيقي. <span class="ic">listen</span> يسجّل الحالات بالترتيب.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="test/03_providers_test.dart"><code>ProviderContainer makeContainer() =&gt; ProviderContainer.test(
+  overrides: [productApiProvider.overrideWithValue(api)],
+);
+
+test('الحالات بالترتيب: loading ثم error', () async {
+  when(() =&gt; api.fetchProducts()).thenThrow(Exception('offline'));
+  final container = makeContainer();
+  final states = &lt;AsyncValue&lt;List&lt;Product&gt;&gt;&gt;[];
+  container.listen(
+    productsProvider,
+    (_, next) =&gt; states.add(next),
+    fireImmediately: true,
+  );
+  await expectLater(
+    container.read(productsProvider.future),
+    throwsA(isA&lt;ProductsException&gt;()),
+  );
+  expect(states.last, isA&lt;AsyncError&lt;List&lt;Product&gt;&gt;&gt;());</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 12 L3: widget test ================= -->
+<section class="slide" data-kicker="الدرس 3 · اختبار Providers و Widgets · Testing">
+  <h2 class="a">Widget test: <span class="en">pumpWidget</span> ← <span class="en">tap</span> ← <span class="en">pump</span> ← <span class="en">expect</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <table class="tbl a">
+        <thead><tr><th class="l">الدالة</th><th>ماذا تفعل؟</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">pump()</td><td>إطار واحد</td></tr>
+          <tr><td class="mono">pump(Duration)</td><td>نقدّم الساعة الوهمية</td></tr>
+          <tr><td class="mono">pumpAndSettle()</td><td>حتى تنتهي كل الأنيميشن والـ Futures</td></tr>
+          <tr><td class="mono">find.byKey(Key)</td><td>عنصر محدد حتى لو تكرر النص</td></tr>
+        </tbody>
+      </table>
+      <div class="warn a"><b>⚠️ Riverpod 3</b> يعيد المحاولة عند الخطأ تلقائياً ← أوقفناها في productsProvider: <span class="ic">retry: (retryCount, error) =&gt; null</span></div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="test/03_shop_widget_test.dart"><code>Widget app() =&gt; ProviderScope(
+  overrides: [productApiProvider.overrideWithValue(api)],
+  child: const MaterialApp(home: ShopScreen()),
+);
+
+await tester.pumpWidget(app());
+// الإطار الأول: ما زال يحمّل
+expect(find.byType(CircularProgressIndicator), findsOneWidget);
+await tester.pumpAndSettle(); // ننتظر حتى تكتمل الـ Future والأنيميشن
+expect(find.text('لوحة مفاتيح'), findsOneWidget);
+
+await tester.tap(find.byKey(const Key('add-kb')));
+await tester.pump();
+final badge = tester.widget&lt;Text&gt;(find.byKey(const Key('cart-count')));
+expect(badge.data, '2');</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 3</span><code>lib/lessons/03_provider_widget_tests.dart</code><code>flutter test test/03_shop_widget_test.dart</code></div>
+</section>
+
+<!-- ================= 13 TIPS L3 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 3 · اختبار Providers و Widgets">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 3</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">في widget test يلزم <span class="ic">MaterialApp</span> حول الشاشة (Theme و Directionality و Navigator)، و <span class="ic">ProviderScope(overrides: […])</span> حولها إذا كانت تستخدم Riverpod.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">مع أنيميشن <span class="ic">repeat()</span> لا تنتهي أبداً ← <span class="ic">pumpAndSettle</span> يفشل بـ timeout. استخدم <span class="ic">pump(Duration)</span> بدلاً منه.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">Riverpod 3 يعيد المحاولة تلقائياً عند الخطأ — أوقفها للحاوية كلها في الاختبار:
+<pre class="code tip" data-file="lib/lessons/03_provider_widget_tests.dart"><code>ProviderContainer.test(retry: (retryCount, error) =&gt; null)</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx"><span class="ic">find.byTooltip</span> و <span class="ic">find.bySemanticsLabel</span> تجد العناصر كما يراها قارئ الشاشة — تختبر إمكانية الوصول أيضاً (الدرس 9).</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 14 L4 OPENER: integration ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">4</span><span class="lt">الدرس 4 · Integration tests</span><span class="tag test">Testing</span></div>
+  <h2 class="a"><span class="en">integration_test/app_test.dart</span>: نفس API الـ Widget test — على جهاز حقيقي</h2>
+  <div class="body">
+<pre class="code a" data-file="integration_test/app_test.dart"><code>// ⚠️ السطر الأهم: يربط الاختبار بالجهاز الحقيقي
+IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+await tester.pumpWidget(const ProviderScope(child: WorkshopApp()));
+await tester.pumpAndSettle();
+await openLesson(tester, 4);
+await tester.enterText(find.byKey(const Key('email')), 'ali@');
+await tester.enterText(find.byKey(const Key('password')), '123456');
+await tester.tap(find.byKey(const Key('login')));
+await tester.pumpAndSettle();
+expect(find.text('بريد غير صالح'), findsOneWidget);
+await tester.enterText(find.byKey(const Key('email')), 'ali@mail.com');
+await tester.tap(find.byKey(const Key('login')));
+await tester.pumpAndSettle();
+expect(find.byKey(const Key('welcome')), findsOneWidget);</code></pre>
+  </div>
+</section>
+
+<!-- ================= 15 L4: run on device ================= -->
+<section class="slide" data-kicker="الدرس 4 · Integration tests · Testing">
+  <h2 class="a">ثلاثة أنواع — متى وأين يعمل كل نوع؟</h2>
+  <div class="body">
+    <table class="tbl a">
+      <thead><tr><th style="width:250px">النوع</th><th>أين يعمل؟</th><th style="width:330px">الزمن</th><th class="l" style="width:600px">الأمر</th></tr></thead>
+      <tbody>
+        <tr><td><b>Unit</b></td><td>Dart VM — بدون شاشة</td><td>ميلي ثوانٍ</td><td class="mono">flutter test</td></tr>
+        <tr><td><b>Widget</b></td><td>بيئة رسم وهمية + وقت مزيّف</td><td>≈ 100ms للاختبار</td><td class="mono">flutter test</td></tr>
+        <tr><td><b>Integration</b></td><td>جهاز / محاكي / سطح المكتب — وقت حقيقي</td><td>ثوانٍ + بناء التطبيق</td><td class="mono">flutter test integration_test</td></tr>
+      </tbody>
+    </table>
+    <div class="cards three a" style="margin-top:22px">
+      <div class="card"><h3>1 · جهّز جهازاً</h3><p>محاكي Android، أو هاتف مع USB debugging، أو سطح المكتب.</p></div>
+      <div class="card"><h3>2 · اعرف معرّفه</h3><p><span class="ic">flutter devices</span> ← مثلاً <span class="ic">emulator-5554</span></p></div>
+      <div class="card"><h3>3 · شغّل</h3><p><span class="ic">-d emulator-5554</span> أو <span class="ic">-d linux</span> ← ✅ 2 اختبار في ≈ 6 ثوانٍ على Linux.</p></div>
+    </div>
+  </div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 4</span><code>lib/lessons/04_integration_tests.dart</code><code>flutter test integration_test -d linux</code></div>
+</section>
+
+<!-- ================= 16 TIPS L4 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 4 · Integration tests">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 4</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">صورة من الجهاز أثناء الاختبار (تقارير أو مقارنة تصميم) — على Android استدعِ <span class="ic">convertFlutterSurfaceToImage()</span> أولاً:
+<pre class="code tip" data-file="lib/lessons/04_integration_tests.dart"><code>final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+await binding.takeScreenshot('login');</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">على الويب نحتاج flutter drive مع chromedriver وملف <span class="ic">test_driver/integration_test.dart</span>:
+<pre class="code tip" data-file="lib/lessons/04_integration_tests.dart"><code>flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/app_test.dart -d chrome</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">اختبار الأداء على الجهاز (اليوم الخامس): <span class="ic">binding.traceAction(() async {…})</span> يسجّل Timeline لأزمنة رسم الإطارات.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">اجعل integration tests قليلة وتغطي «الرحلات المهمة» فقط (تسجيل دخول، شراء) — والباقي unit و widget: هرم الاختبارات.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 17 L5 OPENER: implicit ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">5</span><span class="lt">الدرس 5 · الأنيميشن</span><span class="tag ui">UI</span></div>
+  <h2 class="a">Implicit أولاً: غيّر القيمة في setState — والحركة تلقائية</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <div class="cards a">
+        <div class="card"><h3>Implicit (ضمني)</h3><p>AnimatedContainer · AnimatedOpacity · AnimatedSwitcher · TweenAnimationBuilder — نعطي القيمة الجديدة و duration و curve فقط.</p></div>
+        <div class="card"><h3>Explicit (صريح)</h3><p>AnimationController: forward · reverse · repeat · stop — عند التكرار أو التحكم اليدوي أو حركات متتالية (Staggered).</p></div>
+      </div>
+      <div class="key a"><b>القاعدة:</b> ابدأ بـ Implicit كلما كفى، وانتقل لـ Explicit عندما تحتاج التحكم بالزمن نفسه.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/05_animations.dart"><code>onTap: () =&gt; setState(() =&gt; _big = !_big),
+child: AnimatedContainer(
+  duration: const Duration(milliseconds: 600),
+  curve: Curves.easeOutBack,
+  width: _big ? 260 : 120,
+  height: _big ? 140 : 80,
+  decoration: BoxDecoration(
+    color: _big ? colors.primary : colors.tertiaryContainer,
+    borderRadius: BorderRadius.circular(_big ? 32 : 12),
+  ),
+// ...
+TweenAnimationBuilder&lt;double&gt;(
+  tween: Tween(end: _target),
+  duration: const Duration(milliseconds: 800),
+  builder: (context, value, _) =&gt; Column(</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 18 L5: controller timeline (diagram) ================= -->
+<section class="slide" data-kicker="الدرس 5 · الأنيميشن · UI">
+  <h2 class="a"><span class="en">AnimationController</span>: نبضة كل إطار ← قيمة من 0.0 إلى 1.0 ← منحنى ← Widget</h2>
+  <div class="body"><div class="cols diagram wt">
+    <div class="col text">
+<pre class="code a sm" data-file="lib/lessons/05_animations.dart"><code>late final _controller = AnimationController(
+  vsync: this,
+  duration: const Duration(seconds: 2),
+);
+late final _curved = CurvedAnimation(
+  parent: _controller,
+  curve: Curves.easeOutBack, // يتجاوز 1 قليلاً ثم يرجع
+);
+// Tween: من 0.0 إلى 1.0 ← قيم حقيقية: زاوية الدوران ثم الحجم
+late final _turns = Tween(begin: 0.0, end: 1.0).animate(_curved);
+late final _scale = Tween(begin: 0.6, end: 1.2).animate(_curved);</code></pre>
+      <div class="key a"><b>vsync: this</b> يأتي من <span class="ic">SingleTickerProviderStateMixin</span> على الـ State.</div>
+      <div class="warn a"><b>⚠️</b> <span class="ic">_controller.dispose()</span> في dispose إلزامي — وإلا يبقى الـ Ticker يعمل (تسريب).</div>
+    </div>
+    <div class="col dia">
+      <div class="diagram act a" data-loop="5000">
+        <div class="lane"><div class="lt">vsync<small>Ticker: نبضة كل إطار ≈ 16ms</small></div><div class="viz"><div class="ticks"><i style="--k:0"></i><i style="--k:1"></i><i style="--k:2"></i><i style="--k:3"></i><i style="--k:4"></i><i style="--k:5"></i><i style="--k:6"></i><i style="--k:7"></i><i style="--k:8"></i><i style="--k:9"></i><i style="--k:10"></i><i style="--k:11"></i></div></div></div>
+        <div class="ar">↓ كل نبضة تحدّث القيمة</div>
+        <div class="lane"><div class="lt">controller<small>value من 0 إلى 1 خطياً</small></div><div class="viz"><div class="trk"><span class="dot lin"></span></div><div class="scale"><span>0.0</span><span>1.0</span></div></div></div>
+        <div class="ar">↓ CurvedAnimation</div>
+        <div class="lane"><div class="lt">curved<small>Curves.easeOutBack</small></div><div class="viz"><div class="trk"><span class="dot cur"></span></div><div class="scale"><span>0.0</span><span>1.0 ← يتجاوزها ثم يرجع</span></div></div></div>
+        <div class="ar">↓ Tween</div>
+        <div class="lane"><div class="lt">Widget<small>turns 0→1 · scale 0.6→1.2</small></div><div class="viz w"><span class="wdg">🐦</span><span class="cap">RotationTransition<br>ScaleTransition</span></div></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 19 L5: staggered ================= -->
+<section class="slide" data-kicker="الدرس 5 · الأنيميشن · UI">
+  <h2 class="a">Staggered: controller واحد، وكل عنصر في جزء من الزمن (<span class="en">Interval</span>)</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">العنصر i يبدأ عند <span class="ic">i × 0.25</span> وينتهي عند <span class="ic">i × 0.25 + 0.5</span> من زمن الـ controller.</li>
+        <li class="a">كل عنصر: FadeTransition + SlideTransition من نفس الـ animation.</li>
+      </ul>
+      <div class="diagram ivl a" data-loop="5000">
+        <div class="row"><b>item 0</b><div class="tr"><span class="seg" style="--s:0%;--w:50%;--d:.3s">0 → 0.5</span></div></div>
+        <div class="row"><b>item 1</b><div class="tr"><span class="seg" style="--s:25%;--w:50%;--d:.9s">0.25 → 0.75</span></div></div>
+        <div class="row"><b>item 2</b><div class="tr"><span class="seg" style="--s:50%;--w:50%;--d:1.5s">0.5 → 1.0</span></div></div>
+        <div class="axis"><span>0</span><span>controller.value</span><span>1</span></div>
+      </div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/05_animations.dart"><code>late final _anims = [
+  for (var i = 0; i &lt; _items.length; i++)
+    CurvedAnimation(
+      parent: _controller,
+      curve: Interval(i * 0.25, i * 0.25 + 0.5, curve: Curves.easeOut),
+    ),
+];
+
+return FadeTransition(
+  opacity: animation,
+  child: SlideTransition(
+    position: Tween(
+      begin: const Offset(-0.3, 0),
+      end: Offset.zero,
+    ).animate(animation),</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 5</span><code>lib/lessons/05_animations.dart</code></div>
+</section>
+
+<!-- ================= 20 TIPS L5 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 5 · الأنيميشن">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 5</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">لأكثر من AnimationController في نفس الـ State استخدم <span class="ic">TickerProviderStateMixin</span> (بدون Single) — وإلا يظهر خطأ وقت التشغيل.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">مرّر الجزء الثابت كـ child لـ AnimatedBuilder فلا يُعاد بناؤه كل إطار:
+<pre class="code tip" data-file="lib/lessons/05_animations.dart"><code>AnimatedBuilder(animation: c, child: const Logo(),
+  builder: (context, child) =&gt; Transform.rotate(angle: c.value * 6.3, child: child))</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">احترم إعداد «تقليل الحركة» في الجهاز:
+<pre class="code tip" data-file="lib/lessons/05_animations.dart"><code>if (MediaQuery.disableAnimationsOf(context)) { /* بدون أنيميشن أو مدة أقصر */ }</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">AnimatedSwitcher لا يحرّك شيئاً إذا بقي نفس النوع ونفس الـ key — أعطِ الـ child مفتاحاً يتغيّر مع القيمة: <span class="ic">ValueKey(count)</span>.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 21 L6 OPENER: sliver model (diagram) ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">6</span><span class="lt">الدرس 6 · Slivers</span><span class="tag ui">UI</span></div>
+  <h2 class="a">منطقة تمرير واحدة، وكل sliver يقرّر كم يأخذ من الشاشة</h2>
+  <div class="body"><div class="cols diagram">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">ListView و GridView في الحقيقة <b>sliver واحد</b> داخل CustomScrollView.</li>
+        <li class="a">CustomScrollView يعطي كل sliver <b>scrollOffset</b>، والـ sliver يقرّر كم يرسم (paintExtent).</li>
+        <li class="a"><b>SliverAppBar:</b> يبدأ بـ <span class="ic">expandedHeight: 220</span> ويتقلّص حتى الـ toolbar، و <span class="ic">pinned: true</span> يبقيه ظاهراً.</li>
+        <li class="a"><b>SliverPersistentHeader</b> المثبّت يقف تحته، والشبكة والقائمة تمرّان تحت الاثنين.</li>
+      </ul>
+      <div class="key a"><b>قاعدة:</b> داخل <span class="ic">slivers: []</span> ← slivers فقط. Widget عادي؟ لفّه بـ <span class="ic">SliverToBoxAdapter</span>.</div>
+    </div>
+    <div class="col dia">
+      <div class="diagram slv a" data-loop="9000">
+        <div class="ph">
+          <div class="sab"><span>الدرس 6: Slivers</span></div>
+          <div class="pin">الأقسام — SliverGrid</div>
+          <div class="scr"><div class="trk">
+            <div class="grid"><i>إلكترونيات</i><i>كتب</i><i>ملابس</i><i>رياضة</i></div>
+            <div class="li">منتج رقم 1</div><div class="li">منتج رقم 2</div><div class="li">منتج رقم 3</div><div class="li">منتج رقم 4</div><div class="li">منتج رقم 5</div><div class="li">منتج رقم 6</div><div class="li">منتج رقم 7</div><div class="li">منتج رقم 8</div>
+          </div></div>
+        </div>
+        <div class="steps">
+          <div class="st s1"><b>scrollOffset = 0</b>SliverAppBar بارتفاعه الكامل expandedHeight</div>
+          <div class="st s2"><b>scrollOffset = 164</b>تقلّص إلى الـ toolbar وبقي مثبّتاً (pinned)</div>
+          <div class="st s3"><b>scrollOffset &gt; 164</b>المحتوى يمرّ تحت الرأسين المثبّتين</div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 22 L6: code ================= -->
+<section class="slide" data-kicker="الدرس 6 · Slivers · UI">
+  <h2 class="a"><span class="en">CustomScrollView</span> + رأس مثبّت مخصّص (<span class="en">delegate</span>)</h2>
+  <div class="body"><div class="cols even">
+    <div class="col code" style="flex:.75">
+<pre class="code a" data-file="lib/lessons/06_slivers.dart"><code>CustomScrollView(
+  controller: _scroll,
+  slivers: [
+  SliverAppBar(
+    pinned: true,
+    stretch: true,
+    expandedHeight: 220,
+  // ...
+  const SliverPersistentHeader(
+    pinned: true,
+    delegate: _SectionHeader('الأقسام'),
+  ),
+  SliverGrid.builder(
+  // ...
+  SliverList.builder(
+    itemCount: 30,</code></pre>
+    </div>
+    <div class="col code" style="flex:1.25">
+<pre class="code a" data-file="lib/lessons/06_slivers.dart"><code>class _SectionHeader extends SliverPersistentHeaderDelegate {
+  @override
+  double get maxExtent =&gt; 56;
+  @override
+  double get minExtent =&gt; 56;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+  // ...
+  @override
+  bool shouldRebuild(_SectionHeader oldDelegate) =&gt;
+      oldDelegate.title != title;</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 6</span><code>lib/lessons/06_slivers.dart</code></div>
+</section>
+
+<!-- ================= 23 TIPS L6 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 6 · Slivers">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 6</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">رؤوس مثبّتة بدون delegate (Flutter 3.24+) — و <span class="ic">SliverFloatingHeader</span> يختفي عند التمرير للأسفل ويظهر عند الرجوع:
+<pre class="code tip" data-file="lib/lessons/06_slivers.dart"><code>PinnedHeaderSliver(child: Text('عنوان'))</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">قسم له رأس مثبّت خاص به فقط (يُدفع عند انتهاء القسم):
+<pre class="code tip" data-file="lib/lessons/06_slivers.dart"><code>SliverMainAxisGroup(slivers: [PinnedHeaderSliver(...), SliverList(...)])</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">لا تضع ListView داخل SliverToBoxAdapter مع shrinkWrap — تفقد الكسل وتبني كل العناصر مرة واحدة. استخدم <span class="ic">SliverList.builder</span> مباشرة.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">SliverAppBar مع <span class="ic">floating: true</span> و <span class="ic">snap: true</span> ← يظهر كاملاً مع أول سحب للأسفل.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 24 L7 OPENER: ring ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">7</span><span class="lt">الدرس 7 · CustomPainter</span><span class="tag ui">UI</span></div>
+  <h2 class="a">لا يوجد Widget جاهز؟ ارسم بنفسك على <span class="en">Canvas</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">paint(canvas, size)</span> ← أوامر الرسم: drawArc · drawRect · drawPath.</li>
+        <li class="a"><span class="ic">shouldRepaint(old)</span> ← false إذا لم تتغيّر البيانات (أداء).</li>
+      </ul>
+      <div class="diagram ring a" data-loop="6000">
+        <div class="rbox"><svg viewBox="0 0 300 300"><circle class="rt" cx="150" cy="150" r="118"/><circle class="ra" cx="150" cy="150" r="118" pathLength="100"/></svg><div class="rl">65%</div></div>
+        <div class="rnote"><span>البداية: <bdi dir="ltr">-π / 2</bdi> (الأعلى)</span><span>المسافة: <bdi dir="ltr">2π × progress</bdi></span></div>
+      </div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/07_custom_painter.dart"><code>void paint(Canvas canvas, Size size) {
+  const stroke = 14.0;
+  final center = size.center(Offset.zero);
+  final radius = (size.shortestSide - stroke) / 2;
+  final rect = Rect.fromCircle(center: center, radius: radius);
+  canvas.drawCircle(center, radius, track);
+  // القوس: يبدأ من الأعلى (-90°) ويمتد بنسبة progress من 360°
+  canvas.drawArc(rect, -math.pi / 2, 2 * math.pi * progress, false, arc);
+}
+
+@override
+bool shouldRepaint(ProgressRingPainter old) =&gt;
+    old.progress != progress ||
+    old.color != color ||
+    old.trackColor != trackColor;</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 25 L7: repaint ================= -->
+<section class="slide" data-kicker="الدرس 7 · CustomPainter · UI">
+  <h2 class="a">متى يُعاد الرسم؟ <span class="en">shouldRepaint</span> · <span class="en">repaint</span> · <span class="en">RepaintBoundary</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <table class="tbl a">
+        <thead><tr><th style="width:250px">الأداة</th><th>متى يُعاد الرسم؟</th></tr></thead>
+        <tbody>
+          <tr><td><b>shouldRepaint</b></td><td>بعد build جديد، فقط إن تغيّرت القيم</td></tr>
+          <tr><td><b>repaint:</b></td><td>مع كل تغيّر في الأنيميشن — paint فقط بدون build</td></tr>
+          <tr><td><b>RepaintBoundary</b></td><td>طبقة معزولة: حركة غيرها لا تعيد رسمها</td></tr>
+        </tbody>
+      </table>
+      <div class="tip a"><b>💡 النص على Canvas:</b> <span class="ic">TextPainter</span> ← layout ← paint ← dispose (الرسم البياني في الدرس).</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/07_custom_painter.dart"><code>class WavePainter extends CustomPainter {
+  WavePainter({required this.animation, required this.color})
+    : super(repaint: animation);
+
+  final Animation&lt;double&gt; animation;
+  final Color color;
+  // ...
+  @override
+  bool shouldRepaint(WavePainter old) =&gt; old.color != color;
+}
+// RepaintBoundary: يعزل الرسم في طبقة خاصة — لا يُعاد رسمه
+child: RepaintBoundary(
+  child: CustomPaint(
+    size: Size.infinite,
+    painter: BarChartPainter(</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 7</span><code>lib/lessons/07_custom_painter.dart</code></div>
+</section>
+
+<!-- ================= 26 TIPS L7 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 7 · CustomPainter">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 7</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">CustomPaint بدون child وبدون size حجمه صفر ← لا يظهر شيء! أعطه <span class="ic">size: Size.infinite</span> داخل SizedBox، أو child يحدد الحجم.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">لمعرفة أي جزء يُعاد رسمه: فعّل Highlight repaints في Flutter DevTools، أو في الكود <span class="ic">debugRepaintRainbowEnabled = true</span> من rendering.dart.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">foregroundPainter يرسم فوق الـ child و painter تحته:
+<pre class="code tip" data-file="lib/lessons/07_custom_painter.dart"><code>CustomPaint(painter: Grid(), foregroundPainter: Highlight(), child: ...)</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">لاختبار الرسم: <span class="ic">matchesGoldenFile('ring.png')</span> في widget test يقارن صورة الـ Widget بصورة محفوظة — وأنشئها بـ <span class="ic">flutter test --update-goldens</span>.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 27 L8 OPENER: theming ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">8</span><span class="lt">الدرس 8 · Responsive و Theming</span><span class="tag ui">UI</span></div>
+  <h2 class="a">ثيم واحد من لون واحد — فاتح وداكن — وألواننا الخاصة معه</h2>
+  <div class="body"><div class="stack">
+<pre class="code a" data-file="lib/lessons/08_responsive_theming.dart"><code>ThemeData buildTheme(Color seed, Brightness brightness) {
+  final scheme = ColorScheme.fromSeed(seedColor: seed, brightness: brightness);
+  return ThemeData(
+    colorScheme: scheme,
+    extensions: [
+      brightness == Brightness.dark ? AppColors.dark : AppColors.light,
+    ],</code></pre>
+    <div class="cols even">
+      <div class="col text">
+        <ul class="bul tight">
+          <li class="a"><span class="ic">ColorScheme.fromSeed</span> ← لون بذرة واحد يولّد كل ألوان Material 3.</li>
+          <li class="a"><b>ThemeExtension</b> ← ألوان خاصة (success / warning) تتغيّر مع الثيم: <span class="ic">context.appColors</span></li>
+          <li class="a"><b>themeSettingsProvider</b> ← الوضع واللون للتطبيق كله.</li>
+        </ul>
+      </div>
+      <div class="col code">
+<pre class="code a" data-file="lib/main.dart"><code>final settings = ref.watch(themeSettingsProvider);
+themeMode: settings.mode,
+theme: buildTheme(settings.seed, Brightness.light),
+darkTheme: buildTheme(settings.seed, Brightness.dark),</code></pre>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 28 L8: responsive (diagram) ================= -->
+<section class="slide" data-kicker="الدرس 8 · Responsive و Theming · UI">
+  <h2 class="a">نقاط التوقف: <span class="en">LayoutBuilder</span> يقرّر الشكل حسب العرض المتاح</h2>
+  <div class="body"><div class="cols diagram">
+    <div class="col text">
+<pre class="code a sm" data-file="lib/lessons/08_responsive_theming.dart"><code>static WindowSize of(double width) =&gt; switch (width) {
+  &lt; 600 =&gt; compact,
+  &lt; 840 =&gt; medium,
+  _ =&gt; expanded,
+};
+
+body: LayoutBuilder(
+  builder: (context, constraints) {
+    final size = WindowSize.of(constraints.maxWidth);
+    if (size == WindowSize.compact) {
+      return Column(
+        children: [
+          Expanded(child: content),
+          NavigationBar(</code></pre>
+    </div>
+    <div class="col dia">
+      <div class="diagram rsp a" data-loop="9000">
+        <div class="win">
+          <div class="wbar"><i></i><i></i><i></i></div>
+          <div class="wbody">
+            <div class="rail"><i></i><i></i><i></i></div>
+            <div class="main"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="side">لوحة</div>
+          </div>
+          <div class="bnav"><i></i><i></i><i></i></div>
+        </div>
+        <div class="wl">
+          <span class="e"><b>expanded ≥ 840</b> Rail ممتد + لوحة جانبية · 4 أعمدة</span>
+          <span class="m"><b>medium 600–840</b> NavigationRail · 3 أعمدة</span>
+          <span class="c"><b>compact &lt; 600</b> NavigationBar بالأسفل · عمودان</span>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 8</span><code>lib/lessons/08_responsive_theming.dart</code><code>flutter run -d linux</code></div>
+</section>
+
+<!-- ================= 29 TIPS L8 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 8 · Responsive و Theming">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 8</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx"><b>LayoutBuilder أم MediaQuery؟</b> LayoutBuilder يعطي مساحة الـ Widget نفسه (صحيح داخل لوحة جانبية أو Dialog)، و <span class="ic">MediaQuery.sizeOf</span> حجم الشاشة كلها.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">لا تكتب ألواناً ثابتة داخل الشاشات: <span class="ic">Colors.blue</span> ❌ ← <span class="ic">context.colors.primary</span> ✅ — هكذا يعمل الوضع الداكن وتغيير اللون تلقائياً.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">لون نص مناسب فوق أي خلفية: استخدم الأزواج on*:
+<pre class="code tip" data-file="lib/lessons/08_responsive_theming.dart"><code>primary ← onPrimary · primaryContainer ← onPrimaryContainer</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">لحفظ اختيار الثيم بين التشغيلات: خزّن mode و seed في SharedPreferences (اليوم الثالث) واقرأها في <span class="ic">build()</span> الخاص بـ ThemeSettingsNotifier.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 30 L9 OPENER: l10n setup ================= -->
+<section class="slide">
+  <div class="lh a"><span class="num">9</span><span class="lt">الدرس 9 · الترجمة و RTL و الوصول</span><span class="tag ui">UI</span></div>
+  <h2 class="a">الترجمة الرسمية: <span class="en">intl</span> + ملفات <span class="en">ARB</span> + <span class="en">gen-l10n</span></h2>
+  <div class="body"><div class="cols even">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>pubspec.yaml:</b> flutter_localizations + intl، و <span class="ic">generate: true</span></li>
+        <li class="a"><b>l10n.yaml:</b> مكان ملفات ARB والملف القالب.</li>
+        <li class="a"><b>lib/l10n/app_ar.arb</b> و app_en.arb ← نصوص + plural + select + تاريخ وعملة.</li>
+        <li class="a"><span class="ic">flutter gen-l10n</span> (أو تلقائياً مع run) ← class اسمها AppLocalizations.</li>
+        <li class="a">العربية ← <b>Directionality.rtl تلقائياً</b> للتطبيق كله.</li>
+      </ul>
+    </div>
+    <div class="col code" style="flex:1.4"><div class="stack">
+<pre class="code a sm" data-file="l10n.yaml"><code>arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+nullable-getter: false</code></pre>
+<pre class="code a sm" data-file="lib/l10n/app_ar.arb"><code>"@@locale": "ar",
+"hello": "أهلاً {name}!",
+"total": "الإجمالي: {amount}",</code></pre>
+<pre class="code a sm" data-file="lib/main.dart"><code>locale: const Locale('ar'),
+supportedLocales: AppLocalizations.supportedLocales,
+localizationsDelegates: AppLocalizations.localizationsDelegates,</code></pre>
+    </div></div>
+  </div></div>
+</section>
+
+<!-- ================= 31 L9: plural + usage ================= -->
+<section class="slide" data-kicker="الدرس 9 · الترجمة و RTL و الوصول · UI">
+  <h2 class="a">العربية فيها 6 صيغ جمع — اكتبها في ARB ولا تجمع النصوص بنفسك</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <table class="tbl a">
+        <thead><tr><th>الصيغة في ARB</th><th>count</th><th>الناتج</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">=0</td><td>0</td><td>السلة فارغة</td></tr>
+          <tr><td class="mono">=1 · =2</td><td>1 · 2</td><td>منتج واحد · منتجان</td></tr>
+          <tr><td class="mono">few</td><td>3 – 10</td><td>5 منتجات</td></tr>
+          <tr><td class="mono">many</td><td>11 – 99</td><td>11 منتجاً</td></tr>
+          <tr><td class="mono">other</td><td>100 …</td><td>100 منتج</td></tr>
+        </tbody>
+      </table>
+      <div class="tip a"><b>✅ مُختبَر:</b> <span class="ic">test/09_l10n_a11y_test.dart</span> يتحقق من الصيغ الست.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/09_l10n_rtl_a11y.dart"><code>extension L10nX on BuildContext {
+  AppLocalizations get l10n =&gt; AppLocalizations.of(this);
+}
+
+Localizations.override(
+  context: context,
+  locale: Locale(_lang),
+  child: Builder(
+    builder: (context) {
+      final t = context.l10n;
+      // ...
+          Text(t.welcomeBack(_gender)),
+          Text(t.cartItems(_count)),
+          Text(t.total(_count * 19.5)),
+          Text(t.today(DateTime.now())),</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 32 L9: RTL + a11y ================= -->
+<section class="slide" data-kicker="الدرس 9 · الترجمة و RTL و الوصول · UI">
+  <h2 class="a">RTL بـ <span class="en">start / end</span> · الوصول بـ <span class="en">Semantics</span> وحجم الخط والتباين</h2>
+  <div class="body"><div class="stack">
+<pre class="code a sm" data-file="lib/lessons/09_l10n_rtl_a11y.dart"><code>// ❌ left: ثابت في اليسار مهما كانت اللغة
+const EdgeInsets.only(left: 48),
+// ✅ start: يمين في العربية، يسار في الإنجليزية
+const EdgeInsetsDirectional.only(start: 48),
+const ExcludeSemantics(child: Icon(Icons.headphones, size: 40)),
+child: MergeSemantics(
+tooltip: context.l10n.addToCart(name),
+.copyWith(textScaler: TextScaler.linear(_scale)),</code></pre>
+<pre class="code a sm" data-file="test/09_l10n_a11y_test.dart"><code>final handle = tester.ensureSemantics();
+expect(find.byTooltip('أضف سماعة رأس إلى السلة'), findsOneWidget);
+await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+await expectLater(tester, meetsGuideline(textContrastGuideline));
+handle.dispose();</code></pre>
+    <div class="key a"><b>التباين:</b> 4.5:1 على الأقل للنص العادي (WCAG AA) — الشاشة تحسبه بـ <span class="ic">contrastRatio(fg, bg)</span>.</div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 9</span><code>lib/lessons/09_l10n_rtl_a11y.dart</code><code>flutter test test/09_l10n_a11y_test.dart</code></div>
+</section>
+
+<!-- ================= 33 TIPS L9 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 9 · الترجمة و RTL و الوصول">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 9</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">لا تجمع النصوص بنفسك: <span class="ic">'لديك ' + n + ' منتج'</span> ❌ — اكتب plural في ملف ARB ✅</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">أيقونات تشير لاتجاه (سهم، إرسال) ← <span class="ic">Icons.arrow_forward</span> تنعكس تلقائياً. أيقونة مخصّصة؟ <span class="ic">Transform.flip(flipX: …)</span> حسب Directionality.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">نص بالإنجليزية داخل جملة عربية (رقم طلب، بريد) ← اعزله باتجاهه:
+<pre class="code tip" data-file="lib/lessons/09_l10n_rtl_a11y.dart"><code>Text('رقم الطلب: \u2066#A-1024\u2069')   // LRI ... PDI</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">لا تمنع تكبير الخط في التطبيق كله؛ إن انكسر تصميم ما ضع حداً معقولاً:
+<pre class="code tip" data-file="lib/lessons/09_l10n_rtl_a11y.dart"><code>MediaQuery.withClampedTextScaling(maxScaleFactor: 1.6, child: ...)</code></pre></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 34 RECAP ================= -->
+<section class="slide" data-kicker="خلاصة اليوم">
+  <h2 class="a">ملخص اليوم الرابع — درس واحد لكل سطر</h2>
+  <div class="body"><div class="recap">
+    <div class="part a">
+      <h3>الدروس 1 – 4</h3>
+      <ul>
+        <li class="a"><b>1 · Extensions:</b> دوال لأنواع موجودة، extension type للأمان «المجاني»، و <span class="ic">context.colors</span> في كل الشاشات.</li>
+        <li class="a"><b>2 · Unit + mocktail:</b> group / setUp / expect، و when ← thenAnswer ← verify.</li>
+        <li class="a"><b>3 · Providers + Widgets:</b> <span class="ic">ProviderContainer.test</span> + override، و pumpWidget ← tap ← pump.</li>
+        <li class="a"><b>4 · Integration:</b> التطبيق الحقيقي على جهاز: <span class="ic">flutter test integration_test</span></li>
+      </ul>
+    </div>
+    <div class="part a">
+      <h3>الدروس 5 – 9</h3>
+      <ul>
+        <li class="a"><b>5 · الأنيميشن:</b> Implicit أولاً؛ AnimationController + Curve + Tween + Interval عند الحاجة.</li>
+        <li class="a"><b>6 · Slivers:</b> CustomScrollView و SliverAppBar المثبّت ورؤوس الأقسام.</li>
+        <li class="a"><b>7 · CustomPainter:</b> paint + shouldRepaint دقيق، و repaint للأنيميشن.</li>
+        <li class="a"><b>8 · Responsive و Theming:</b> fromSeed + ThemeExtension، و LayoutBuilder بنقاط 600 / 840.</li>
+        <li class="a"><b>9 · l10n · RTL · a11y:</b> ARB و plural، start / end، Semantics والتباين.</li>
+      </ul>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 35 EXERCISES ================= -->
+<section class="slide" data-kicker="تمارين عملية">
+  <h2 class="a">تمارين — عدّل أمثلة التطبيق بنفسك</h2>
+  <div class="body">
+    <ol class="ex">
+      <li class="a"><b>الدرس 1 + 2:</b> أضف امتداد <span class="ic">String.isStrongPassword</span> واكتب له unit test، ثم استخدمه في validator نموذج الدرس 4.</li>
+      <li class="a"><b>الدرس 2:</b> أضف <span class="ic">clear()</span> إلى Cart واختبره، واكتب اختبار mocktail يتأكد أن <span class="ic">refresh: true</span> يرمي ProductsException عند الخطأ.</li>
+      <li class="a"><b>الدرس 3:</b> اكتب widget test يفعّل «محاكاة انقطاع الشبكة» عبر <span class="ic">Key('offline-switch')</span> ويتحقق من ظهور زر إعادة المحاولة.</li>
+      <li class="a"><b>الدرس 5 + 7:</b> حرّك حلقة التقدّم من 0 إلى 1 بـ AnimationController و <span class="ic">repeat()</span> بدل TweenAnimationBuilder.</li>
+      <li class="a wide"><b>الدرس 9:</b> أضف نصاً جديداً <span class="ic">ordersCount</span> مع plural إلى app_en.arb و app_ar.arb، شغّل <span class="ic">flutter gen-l10n</span> واعرضه في الشاشة، وأضف له اختباراً في <span class="ic">test/09_l10n_a11y_test.dart</span>.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= 36 CLOSING / DAY 5 ================= -->
+<section class="slide" data-kicker="نهاية اليوم الرابع">
+  <h2 class="a">غداً — اليوم الخامس والأخير</h2>
+  <div class="body">
+    <div class="next four">
+      <div class="card a"><h3>الأداء</h3><ul>
+        <li>DevTools وأزمنة الإطارات (traceAction)</li>
+        <li>const و RepaintBoundary وتقليل إعادة البناء</li>
+      </ul></div>
+      <div class="card a"><h3>التكامل مع Native</h3><ul>
+        <li>Platform channels و Pigeon</li>
+        <li>طلب الأذونات (permissions) و plugins الجهاز</li>
+      </ul></div>
+      <div class="card a"><h3>الأمان</h3><ul>
+        <li>تخزين آمن للتوكن وإخفاء المفاتيح</li>
+        <li>obfuscation و SSL pinning</li>
+      </ul></div>
+      <div class="card a"><h3>النشر والمراقبة</h3><ul>
+        <li>flavors والتوقيع والبناء للمتاجر</li>
+        <li>Crashlytics ومراقبة الأخطاء</li>
+      </ul></div>
+    </div>
+    <div class="key a" style="margin-top:22px;font-size:30px"><b>+ درس Dart قصير:</b> Isolates — تشغيل العمليات الثقيلة بدون تجميد الواجهة. <b>قبل الغد:</b> شغّل <span class="ic">flutter test</span> وحاول تمريناً واحداً على الأقل. — أسئلة؟</div>
+  </div>
+</section>
+
+</div><!-- /stage -->
+
+<div id="counter">1 / 36</div>
+<div id="nav"><button id="prevBtn" title="السابق">›</button><button id="ovBtn" title="نظرة عامة (O)">⊞</button><button id="nextBtn" title="التالي">‹</button></div>
+<div id="overview"><div class="grid"></div></div>
+<pre id="audit"></pre>
+
+<script>
+(function(){
+  'use strict';
+  var errs=[];
+  window.addEventListener('error',function(e){errs.push(String(e.message||e));});
+
+  var stage=document.getElementById('stage');
+  var slides=Array.prototype.slice.call(stage.querySelectorAll('.slide'));
+  var n=slides.length, cur=-1, loopTimer=null, leaveTimer=null;
+  var params=location.search;
+  var isStatic=/[?&](static|check)\b/.test(params)||matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(isStatic) document.documentElement.classList.add('static');
+
+  /* ---------- stagger indices ---------- */
+  slides.forEach(function(s){
+    var i=0;
+    s.querySelectorAll('.a').forEach(function(el){
+      el.style.setProperty('--i',i);
+      if(el.tagName==='PRE') el.style.setProperty('--pi',i);
+      i++;
+    });
+  });
+
+  /* ---------- tiny Dart highlighter ---------- */
+  var KW={};'abstract as async await base break case catch class const continue covariant default do dynamic else enum export extends extension external factory false final finally for get hide if implements import in interface is late library mixin new null on operator part required rethrow return sealed set show static super switch sync this throw true try typedef var void when while with yield'.split(' ').forEach(function(k){KW[k]=1;});
+  var TY={};'int double num bool String List Map Set Future Stream Object Never Iterable Duration DateTime Timer Completer Stopwatch Isolate SendPort ReceivePort Ref WidgetRef BuildContext Widget'.split(' ').forEach(function(k){TY[k]=1;});
+  var AR=/[؀-ۿ]/;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function tokLine(line){
+    var out='',m;
+    var re=/(\/\/.*)|(r?'(?:[^'\\]|\\.)*'|r?"(?:[^"\\]|\\.)*")|(@[A-Za-z_]\w*)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)|(\s+)|([\s\S])/g;
+    while((m=re.exec(line))){
+      if(m[1]){
+        var mm=/^(\/\/+)([\s\S]*)$/.exec(m[1]);
+        var lead=/^(\s*\d+\)\s*)([\s\S]*)$/.exec(mm[2]); if(lead&&AR.test(lead[2])){ out+='<span class="cm">'+esc(mm[1]+lead[1])+'</span><span class="cm" dir="rtl">'+esc(lead[2])+'</span>'; } else { var lead=/^(\s*\d+\)\s*)([\s\S]*)$/.exec(mm[2]); if(lead&&AR.test(lead[2])){ out+='<span class="cm">'+esc(mm[1]+lead[1])+'</span><span class="cm" dir="rtl">'+esc(lead[2])+'</span>'; } else { out+='<span class="cm">'+esc(mm[1])+'</span><span class="cm" dir="'+(AR.test(mm[2])?'rtl':'ltr')+'">'+esc(mm[2])+'</span>'; } }
+      }else if(m[2]){
+        var s=esc(m[2]);
+        if(m[2].charAt(0)!=='r') s=s.replace(/\$\{[^}]*\}|\$\w+/g,function(x){return '<span class="ip">'+x+'</span>';});
+        var qm=AR.test(m[2])&&/^(r?)(['"])([\s\S]*)\2$/.exec(m[2]); if(qm){ var inner=esc(qm[3]); if(!qm[1]) inner=inner.replace(/\$\{[^}]*\}|\$\w+/g,function(x){return '<span class="ip">'+x+'</span>';}); out+='<span class="st">'+qm[1]+qm[2]+'</span><span class="st" dir="rtl">'+inner+'</span><span class="st">'+qm[2]+'</span>'; } else out+='<span class="st"'+(AR.test(m[2])?' dir="rtl"':'')+'>'+s+'</span>';
+      }else if(m[3]){ out+='<span class="an">'+esc(m[3])+'</span>'; }
+      else if(m[4]){ out+='<span class="nu">'+m[4]+'</span>'; }
+      else if(m[5]){
+        var w=m[5], rest=line.slice(re.lastIndex), isCall=/^\s*\(/.test(rest)&&!/^\s*\(\s*\)\s*(=>|\{)/.test(rest)&&!KW[w];
+        if(KW[w]) out+='<span class="kw">'+w+'</span>';
+        else if(TY[w]||/^_?\$?[A-Z]/.test(w)) out+='<span class="ty">'+w+'</span>';
+        else if(isCall) out+='<span class="fn">'+esc(w)+'</span>';
+        else out+=esc(w);
+      }else out+=esc(m[0]);
+    }
+    return out;
+  }
+  stage.querySelectorAll('pre.code code').forEach(function(code){
+    var lines=code.textContent.replace(/\s+$/,'').split('\n');
+    code.innerHTML=lines.map(function(l,i){return '<span class="ln" style="--i:'+i+'">'+(tokLine(l)||' ')+'</span>';}).join('');
+  });
+
+  /* ---------- auto-fit code font so the widest line fits its block (min 22px) ---------- */
+  function fitCode(){
+    stage.querySelectorAll('pre.code').forEach(function(pre){
+      var code=pre.querySelector('code'); if(!code) return;
+      pre.style.fontSize='';
+      var fs=parseFloat(getComputedStyle(pre).fontSize), guard=0;
+      while(code.scrollWidth>code.clientWidth+1 && fs>22 && guard++<8){ fs-=1; pre.style.fontSize=fs+'px'; }
+    });
+  }
+  fitCode();
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitCode);
+
+  /* ---------- fit 16:9 stage ---------- */
+  function fit(){
+    var s=Math.min(innerWidth/1920,innerHeight/1080);
+    stage.style.transform='scale('+s+')';
+    stage.style.left=((innerWidth-1920*s)/2)+'px';
+    stage.style.top=((innerHeight-1080*s)/2)+'px';
+  }
+  addEventListener('resize',fit); fit();
+
+  /* ---------- diagrams loop ---------- */
+  function startLoop(slide){
+    stopLoop();
+    if(isStatic) return;
+    var d=slide.querySelector('.diagram[data-loop]'); if(!d) return;
+    var play=function(){ d.classList.remove('play'); void d.offsetWidth; d.classList.add('play'); };
+    play();
+    loopTimer=setInterval(play,parseInt(d.getAttribute('data-loop'),10)||8000);
+    loopTimer._d=d;
+  }
+  function stopLoop(){
+    if(loopTimer){ clearInterval(loopTimer); if(loopTimer._d) loopTimer._d.classList.remove('play'); loopTimer=null; }
+  }
+
+  /* ---------- navigation ---------- */
+  var progress=document.getElementById('progress'), counter=document.getElementById('counter');
+  function go(i,dir){
+    i=Math.max(0,Math.min(n-1,i));
+    if(i===cur) return;
+    if(dir===undefined) dir=i>cur?1:-1;
+    stage.classList.toggle('back',dir<0);
+    if(cur>=0){
+      var old=slides[cur];
+      old.classList.remove('active'); old.classList.add('leaving');
+      clearTimeout(leaveTimer);
+      leaveTimer=setTimeout(function(){ old.classList.remove('leaving'); },650);
+      slides.forEach(function(s){ if(s!==old) s.classList.remove('leaving'); });
+    }
+    cur=i;
+    slides[cur].classList.add('active');
+    progress.style.width=((cur+1)/n*100)+'%';
+    counter.textContent=(cur+1)+' / '+n;
+    if(('#'+(cur+1))!==location.hash) history.replaceState(null,'','#'+(cur+1));
+    startLoop(slides[cur]);
+  }
+  function next(){ go(cur+1,1); } function prev(){ go(cur-1,-1); }
+  function fromHash(){ var h=parseInt((location.hash||'').replace('#',''),10); return isNaN(h)?0:h-1; }
+  addEventListener('hashchange',function(){ var i=fromHash(); if(i!==cur) go(i); });
+
+  /* ---------- overview ---------- */
+  var ov=document.getElementById('overview'), grid=ov.querySelector('.grid');
+  function openOverview(){
+    grid.innerHTML='';
+    var cols=5, w=(ov.clientWidth-56-(cols-1)*18)/cols, sc=w/1920;
+    slides.forEach(function(s,i){
+      var t=document.createElement('div'); t.className='thumb'+(i===cur?' cur':'');
+      var c=s.cloneNode(true); c.classList.add('active'); c.classList.remove('leaving'); c.style.transform='scale('+sc+')';
+      c.querySelectorAll('.diagram').forEach(function(d){ d.classList.remove('play'); });
+      t.appendChild(c);
+      var num=document.createElement('span'); num.className='num'; num.textContent=i+1; t.appendChild(num);
+      t.addEventListener('click',function(ev){ ev.stopPropagation(); closeOverview(); go(i); });
+      grid.appendChild(t);
+    });
+    ov.classList.add('open');
+    var curT=grid.querySelector('.thumb.cur'); if(curT) curT.scrollIntoView({block:'center'});
+  }
+  function closeOverview(){ ov.classList.remove('open'); grid.innerHTML=''; }
+  function toggleOverview(){ ov.classList.contains('open')?closeOverview():openOverview(); }
+
+  /* ---------- fullscreen ---------- */
+  function toggleFull(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  }
+
+  /* ---------- input ---------- */
+  addEventListener('keydown',function(e){
+    if(e.altKey||e.ctrlKey||e.metaKey) return;
+    var k=e.key;
+    if(ov.classList.contains('open')&&(k==='Escape'||k==='o'||k==='O')){ closeOverview(); e.preventDefault(); return; }
+    switch(k){
+      case 'ArrowRight': case 'PageDown': case ' ': case 'Enter': if(e.shiftKey&&k===' '){prev();}else{next();} e.preventDefault(); break;
+      case 'ArrowLeft': case 'PageUp': case 'Backspace': prev(); e.preventDefault(); break;
+      case 'ArrowDown': next(); e.preventDefault(); break;
+      case 'ArrowUp': prev(); e.preventDefault(); break;
+      case 'Home': go(0,-1); e.preventDefault(); break;
+      case 'End': go(n-1,1); e.preventDefault(); break;
+      case 'f': case 'F': toggleFull(); break;
+      case 'o': case 'O': toggleOverview(); e.preventDefault(); break;
+    }
+  });
+  stage.addEventListener('click',function(e){
+    if(e.target.closest('a,button')) return;
+    if(window.getSelection&&String(window.getSelection())) return;
+    next();
+  });
+  document.getElementById('prevBtn').addEventListener('click',function(e){e.stopPropagation();prev();});
+  document.getElementById('nextBtn').addEventListener('click',function(e){e.stopPropagation();next();});
+  document.getElementById('ovBtn').addEventListener('click',function(e){e.stopPropagation();toggleOverview();});
+  var tx=null,ty=null;
+  addEventListener('touchstart',function(e){ var t=e.changedTouches[0]; tx=t.clientX; ty=t.clientY; },{passive:true});
+  addEventListener('touchend',function(e){
+    if(tx===null) return; var t=e.changedTouches[0], dx=t.clientX-tx, dy=t.clientY-ty; tx=null;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){ if(dx<0) next(); else prev(); }
+  },{passive:true});
+
+  go(fromHash(),1);
+
+  /* ---------- presenter chrome auto-hide (2s idle) ---------- */
+  var idleT=null;
+  function wake(){ document.body.classList.remove('idle'); clearTimeout(idleT); idleT=setTimeout(function(){ document.body.classList.add('idle'); },2000); }
+  addEventListener('mousemove',wake,{passive:true});
+  addEventListener('touchstart',wake,{passive:true});
+  wake();
+
+  /* ---------- self-check (?check): layout overflow + JS errors ---------- */
+  if(/[?&]check\b/.test(params)){
+    var report={slides:n,errors:errs,overflow:[],tight:[],pulses:[],fonts:[],colOverflow:[],boxOverflow:[],paren:{checked:0,skippedPairs:0,fail:[]}};
+    function desc(el){ return el.tagName.toLowerCase()+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).join('.'):''); }
+    function run(){
+      fitCode();
+      slides.forEach(function(s,idx){
+        /* parenthesis rule: for every text node matching /\d+\)/ the ")" must sit to the RIGHT of its digit
+           (a ")" that closes an earlier "(" in the same node is an RTL bracket pair and is skipped) */
+        (function(){ var w=document.createTreeWalker(s,NodeFilter.SHOW_TEXT),t; while((t=w.nextNode())){ var txt=t.textContent; if(!/\d\)/.test(txt)) continue; var re=/\d\)/g,m; while((m=re.exec(txt))){ var i=m.index, before=txt.slice(0,i); var open=(before.match(/\(/g)||[]).length, close=(before.match(/\)/g)||[]).length; if(open>close){ report.paren.skippedPairs++; continue; } var r1=document.createRange(); r1.setStart(t,i); r1.setEnd(t,i+1); var r2=document.createRange(); r2.setStart(t,i+1); r2.setEnd(t,i+2); var a=r1.getBoundingClientRect(), b=r2.getBoundingClientRect(); if(a.width===0&&b.width===0) continue; report.paren.checked++; if(!(b.left>a.left)) report.paren.fail.push({slide:idx+1,text:txt.trim().slice(0,40),parent:desc(t.parentNode)}); } } })();
+        /* content wider/taller than its own box (clipped or spilling text), for every non-inline element */
+        s.querySelectorAll('*').forEach(function(el){
+          if(el.closest('svg')||el===s||el.classList.contains('pipe')||el.classList.contains('line')) return;
+          var cs=getComputedStyle(el); if(cs.display==='inline'||cs.display==='none'||cs.display==='contents') return;
+          var dx=el.scrollWidth-el.clientWidth, dy=el.scrollHeight-el.clientHeight;
+          if(dx>1||dy>1) report.boxOverflow.push({slide:idx+1,el:desc(el),dx:dx,dy:dy,text:(el.textContent||'').trim().slice(0,30)});
+        });
+        s.querySelectorAll('pre.code').forEach(function(p){ var f=parseFloat(getComputedStyle(p).fontSize); if(f<27) report.fonts.push({slide:idx+1,fs:f}); });
+        s.querySelectorAll('.ic, .run code').forEach(function(ic){
+          var col=ic.closest('.col, .card, .ex li, .recap li, .run, .sub'); if(!col) return;
+          var a=ic.getBoundingClientRect(), b=col.getBoundingClientRect();
+          if(a.left<b.left-1||a.right>b.right+1) report.colOverflow.push({slide:idx+1,text:ic.textContent.slice(0,40),by:Math.round(Math.max(b.left-a.left,a.right-b.right))});
+        });
+        slides.forEach(function(o){ o.classList.remove('active','leaving'); });
+        s.classList.add('active');
+        var r=s.getBoundingClientRect();
+        s.querySelectorAll('*').forEach(function(el){
+          if(el.closest('svg')&&el.tagName!=='svg') return;
+          var b=el.getBoundingClientRect(); if(b.width<2||b.height<2) return;
+          var tag=el.tagName.toLowerCase()+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).join('.'):'');
+          if(b.right>r.right+1||b.left<r.left-1||b.bottom>r.bottom+1||b.top<r.top-1)
+            report.overflow.push({slide:idx+1,el:tag,dx:Math.round(Math.max(b.right-r.right,r.left-b.left)),dy:Math.round(Math.max(b.bottom-r.bottom,r.top-b.top))});
+          else if(b.bottom>r.bottom-40 && !el.closest('.run') && el.tagName!=='SECTION' && !el.classList.contains('tipbar'))
+            report.tight.push({slide:idx+1,el:tag,gap:Math.round(r.bottom-b.bottom)});
+        });
+        s.querySelectorAll('pre.code code').forEach(function(c){
+          if(c.scrollWidth>c.clientWidth+1) report.overflow.push({slide:idx+1,el:'code-h',dx:c.scrollWidth-c.clientWidth});
+        });
+        s.querySelectorAll('.rp .pulse').forEach(function(p){
+          p.style.offsetDistance='100%'; p.style.opacity='1';
+          var b=p.getBoundingClientRect(), d=p.parentNode.getBoundingClientRect();
+          report.pulses.push({slide:idx+1,cls:p.className,x:Math.round((b.left+b.width/2-d.left)/(d.width/940)),y:Math.round((b.top+b.height/2-d.top)/(d.height/760))});
+          p.style.offsetDistance=''; p.style.opacity='';
+        });
+      });
+      slides.forEach(function(o){ o.classList.remove('active'); });
+      slides[cur].classList.add('active');
+      // dedupe tight by slide
+      var seen={}; report.tight=report.tight.filter(function(t){ var k=t.slide+t.el; if(seen[k]) return false; seen[k]=1; return true; });
+      document.getElementById('audit').textContent=JSON.stringify(report);
+      document.title='AUDIT_DONE';
+    }
+    if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(run,100); }); else setTimeout(run,500);
+  }
+})();
+</script>
+</body>
+</html>

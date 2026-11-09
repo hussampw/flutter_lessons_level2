@@ -1,0 +1,8 @@
+# إعدادات Drift: نحفظ DateTime كنص ISO-8601 (بدقة الملي ثانية) بدل ثوانٍ صحيحة
+# مهم للدرس 9: قاعدة التعارض تقارن updatedAt بين الجهاز والخادم
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          store_date_time_values_as_text: true

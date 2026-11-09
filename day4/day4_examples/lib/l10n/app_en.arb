@@ -1,0 +1,39 @@
+{
+  "@@locale": "en",
+  "appTitle": "Flutter Workshop — Day 4",
+  "@appTitle": {"description": "Window / task-switcher title"},
+  "hello": "Hello {name}!",
+  "@hello": {
+    "description": "Greeting with the user's name",
+    "placeholders": {"name": {"type": "String", "example": "Sara"}}
+  },
+  "cartItems": "{count, plural, =0{Your cart is empty} =1{One item} other{{count} items}}",
+  "@cartItems": {
+    "description": "Number of items in the cart",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "welcomeBack": "{gender, select, male{Welcome back, sir} female{Welcome back, madam} other{Welcome back}}",
+  "@welcomeBack": {
+    "description": "Gender-aware welcome",
+    "placeholders": {"gender": {"type": "String"}}
+  },
+  "total": "Total: {amount}",
+  "@total": {
+    "placeholders": {
+      "amount": {
+        "type": "double",
+        "format": "currency",
+        "optionalParameters": {"name": "SAR", "decimalDigits": 2}
+      }
+    }
+  },
+  "today": "Today is {date}",
+  "@today": {
+    "placeholders": {"date": {"type": "DateTime", "format": "yMMMMEEEEd"}}
+  },
+  "addToCart": "Add {product} to cart",
+  "@addToCart": {
+    "description": "Screen-reader label of the add button",
+    "placeholders": {"product": {"type": "String"}}
+  }
+}

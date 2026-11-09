@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورشة Flutter المتقدمة</title>
+<meta name="description" content="ورشة Flutter المتقدمة — 5 أيام: العروض التقديمية والأمثلة لكل يوم، مع المدرّب حسام حسين (Hussam Hussein)">
+<link rel="icon" href="assets/img/logo.png">
+<link href="assets/fonts/fonts.css" rel="stylesheet"><!-- خطوط محلية: الصفحة تعمل بدون إنترنت -->
+<style>
+:root{
+  --bg:#061A2E; --bg2:#0B2A47; --card:#0E3156; --code:#04111F;
+  --ink:#F3F7FB; --muted:#A9BCD0; --sky:#54C5F8; --blue:#13B9FD; --deep:#0175C2;
+  --amber:#FFC108; --teal:#2EE6A6; --rose:#FF6B81;
+  --sans:'Tajawal',system-ui,sans-serif; --mono:'JetBrains Mono','Fira Code',monospace;
+  --ease:cubic-bezier(.2,.7,.2,1); --r:18px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.7;
+  background-image:radial-gradient(1100px 600px at 85% -10%,rgba(19,185,253,.18),transparent 60%),
+                   radial-gradient(900px 500px at -10% 40%,rgba(1,117,194,.20),transparent 60%);
+  min-height:100vh}
+a{color:var(--sky);text-decoration:none}
+a:hover{text-decoration:underline}
+code,.mono{font-family:var(--mono);direction:ltr;unicode-bidi:isolate}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* ---------- header ---------- */
+header{padding:56px 0 30px}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:38px}
+.top img{width:44px;height:44px;border-radius:12px;background:#fff}
+.top b{font-size:18px;font-weight:700}
+.top span{color:var(--muted);font-size:16px}
+.kicker{display:inline-block;color:var(--amber);font-weight:700;letter-spacing:.5px;font-size:17px;margin-bottom:10px}
+h1{font-size:clamp(38px,6vw,68px);line-height:1.15;font-weight:800}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--sky),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(18px,2.2vw,22px);color:var(--muted);max-width:760px;margin-top:16px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.chip{border:1px solid rgba(84,197,248,.35);background:rgba(84,197,248,.08);color:var(--ink);
+  padding:6px 14px;border-radius:999px;font-size:15px}
+.chip.mono{font-size:14px}
+
+/* ---------- sections ---------- */
+section{padding:34px 0}
+h2{font-size:clamp(26px,3.4vw,36px);font-weight:800;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:24px;font-size:18px}
+
+/* ---------- days ---------- */
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+@media (min-width:1080px){.days{grid-template-columns:repeat(6,1fr)}.day{grid-column:span 2}.day:nth-child(4){grid-column:2 / span 2}.day:nth-child(5){grid-column:4 / span 2}}
+.day{position:relative;background:linear-gradient(180deg,var(--card),var(--bg2));border:1px solid rgba(84,197,248,.18);
+  border-radius:var(--r);padding:24px 22px 20px;display:flex;flex-direction:column;gap:12px;
+  transition:transform .35s var(--ease),border-color .35s var(--ease),box-shadow .35s var(--ease)}
+.day:hover{transform:translateY(-4px);border-color:rgba(84,197,248,.55);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.day .num{position:absolute;top:-14px;inset-inline-start:20px;background:var(--amber);color:#1b1300;
+  font-weight:800;border-radius:12px;padding:2px 14px;font-size:16px}
+.day h3{font-size:24px;font-weight:800;margin-top:6px;line-height:1.35}
+.day .dart{font-size:16px;color:var(--teal)}
+.day .dart::before{content:"Dart · ";font-family:var(--mono);font-size:14px;color:var(--teal);opacity:.9}
+.day .meta{font-size:15px;color:var(--muted)}
+.day details{border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
+.day summary{cursor:pointer;color:var(--sky);font-size:16px;list-style:none}
+.day summary::-webkit-details-marker{display:none}
+.day summary::before{content:"▸ ";display:inline-block;transition:transform .25s}
+.day details[open] summary::before{transform:rotate(90deg)}
+.day ol{padding-inline-start:0;list-style:none;margin-top:8px;display:grid;gap:4px}
+.day li{font-size:16px;display:flex;gap:10px;align-items:baseline}
+.day li i{font-style:normal;font-family:var(--mono);font-size:13px;color:var(--bg);background:var(--sky);
+  border-radius:6px;min-width:24px;text-align:center;padding:0 4px;flex:none}
+.day li.d i{background:var(--teal)}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:6px}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:12px;padding:9px 14px;font-weight:700;font-size:16px;
+  border:1px solid rgba(84,197,248,.4);color:var(--ink);background:rgba(84,197,248,.06);transition:background .25s}
+.btn:hover{background:rgba(84,197,248,.18);text-decoration:none}
+.btn.primary{background:var(--sky);color:#03203a;border-color:var(--sky)}
+.btn.primary:hover{background:var(--blue)}
+.soon{opacity:.55;pointer-events:none}
+.badge-soon{white-space:nowrap;display:inline-block;font-size:13px;color:var(--amber);border:1px solid rgba(255,193,8,.5);border-radius:999px;padding:1px 10px;margin-inline-start:6px}
+
+/* ---------- trainer ---------- */
+.trainer{display:grid;grid-template-columns:220px 1fr;gap:30px;align-items:start;
+  background:linear-gradient(135deg,rgba(14,49,86,.9),rgba(11,42,71,.9));border:1px solid rgba(255,193,8,.25);
+  border-radius:24px;padding:28px}
+.trainer img.photo{width:220px;height:260px;object-fit:cover;border-radius:18px;border:3px solid rgba(255,193,8,.6)}
+.trainer h3{font-size:34px;font-weight:800}
+.en-name{display:inline-block;font-size:20px;font-weight:500;color:var(--muted);direction:ltr;unicode-bidi:isolate;margin-inline-start:10px}
+.trainer .role{color:var(--amber);font-weight:700;font-size:19px;margin-bottom:10px}
+.nw{white-space:nowrap}
+.trainer p{font-size:18px;color:#D5E1EC;max-width:720px}
+.facts{display:flex;flex-wrap:wrap;gap:10px 22px;margin:16px 0;color:var(--muted);font-size:16px}
+.facts b{color:var(--ink);font-weight:700}
+.skills{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 16px}
+.skills span{font-family:var(--mono);direction:ltr;font-size:14px;padding:4px 12px;border-radius:8px;background:var(--code);border:1px solid rgba(84,197,248,.25)}
+.projects{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-bottom:18px}
+.projects div{background:rgba(4,17,31,.6);border-radius:12px;padding:10px 14px;font-size:15px;color:var(--muted)}
+.projects b{display:block;color:var(--ink);font-size:17px}
+.contact{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ---------- how to ---------- */
+.how{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.step{background:var(--bg2);border-radius:var(--r);padding:20px;border:1px solid rgba(255,255,255,.06)}
+.step h4{font-size:19px;margin-bottom:8px}
+.step h4 span{color:var(--amber);font-family:var(--mono);margin-inline-end:6px}
+.step p{color:var(--muted);font-size:16px}
+pre{background:var(--code);border-radius:12px;padding:12px 14px;margin-top:10px;overflow-x:auto;direction:ltr;text-align:left;
+  font-family:var(--mono);font-size:15px;line-height:1.6;color:#CFE8FF;border:1px solid rgba(84,197,248,.15)}
+pre .c{color:#AFC1D4}
+kbd{font-family:var(--mono);font-size:15px;background:var(--code);border:1px solid rgba(255,255,255,.2);border-bottom-width:2px;border-radius:6px;padding:0 6px}
+
+footer{padding:40px 0 50px;color:var(--muted);font-size:16px;text-align:center}
+
+/* ---------- motion ---------- */
+.rise{opacity:0;transform:translateY(22px);animation:rise .8s var(--ease) forwards;animation-delay:calc(var(--i,0) * 90ms)}
+@keyframes rise{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.rise{animation:none;opacity:1;transform:none}.day{transition:none}html{scroll-behavior:auto}}
+
+@media (max-width:720px){
+  header{padding-top:32px}
+  .trainer{grid-template-columns:1fr;padding:20px}
+  .trainer img.photo{width:100%;max-width:260px;height:auto;aspect-ratio:3/4}
+  .days{grid-template-columns:1fr}
+  .top{align-items:flex-start}
+  .top span{display:block}
+}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="top rise">
+    <img src="assets/img/logo.png" alt="شعار Hussam Hussein">
+    <div><b>حسام حسين</b> <span class="mono" style="font-family:var(--sans)">Hussam Hussein</span> <span>Full-stack Developer · Web &amp; Mobile</span></div>
+  </div>
+  <span class="kicker rise" style="--i:1">ورشة عمل · 5 أيام</span>
+  <h1 class="rise" style="--i:2">ورشة <em>Flutter</em> المتقدمة</h1>
+  <p class="lead rise" style="--i:3">من Riverpod و go_router و Dio، إلى قواعد البيانات والمعمارية والاختبارات، وحتى الأداء والأمان والنشر على المتاجر. كل يوم: موضوع رئيسي + درس Dart قصير، مع عرض تقديمي وتطبيق أمثلة بنفس أرقام الدروس.</p>
+  <div class="chips rise" style="--i:4">
+    <span class="chip mono">Flutter 3.47.9</span>
+    <span class="chip mono">Dart 3.13.7</span>
+    <span class="chip mono">Riverpod 3</span>
+    <span class="chip">5 أيام</span>
+    <span class="chip">الشرح بالعربية</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="days">
+    <h2 class="rise" style="--i:5">أيام الورشة</h2>
+    <p class="sub rise" style="--i:5">افتح «العرض» للشرح على الشاشة، و«دليل الأمثلة» لأوامر التشغيل. رقم الدرس واحد في العرض وقائمة التطبيق واسم الملف.</p>
+    <div class="days" id="daysGrid"></div>
+  </section>
+
+  <section id="trainer">
+    <h2 class="rise">المدرّب</h2>
+    <p class="sub">المعلومات من الموقع الشخصي <a href="https://hussam.pw" target="_blank" rel="noopener">hussam.pw</a></p>
+    <div class="trainer rise" style="--i:1">
+      <img class="photo" src="assets/img/trainer.jpg" alt="صورة المدرّب حسام حسين">
+      <div>
+        <h3>حسام حسين <span class="en-name">Hussam Hussein</span></h3>
+        <div class="role"><span class="nw">مطوّر Full-stack</span> <span class="nw">· ويب وموبايل</span> <span class="nw">· مطوّر مستقل</span></div>
+        <p>مطوّر Full-stack ومصمّم برمجيات، يعمل على تطبيقات الويب والموبايل والأنظمة التي خلفها، ويحوّل الأفكار إلى برمجيات عملية. يعمل باستقلالية أو ضمن فريق، ويشارك مقالات تقنية وما يتعلّمه في طريقه.</p>
+        <div class="facts">
+          <span>📅 <b>منذ 2013</b> في تطوير الويب</span>
+          <span>🚀 <b>منذ 2017</b> Full-stack</span>
+          <span>📍 اليمن · مصر · عُمان</span>
+        </div>
+        <div class="skills">
+          <span>Flutter</span><span>React</span><span>PHP</span><span>Laravel</span><span>Yii2</span><span>WordPress</span><span>Linux</span><span>Databases</span><span>SEO</span>
+        </div>
+        <div class="projects">
+          <div><b>Keydoro</b><span class="nw">تطبيق لإدارة العقارات</span><br><a href="https://keydoro.com" target="_blank" rel="noopener">keydoro.com</a></div>
+          <div><b>M7L</b>تطبيق موبايل</div>
+          <div><b>Pilxi</b>تطبيق موبايل</div>
+        </div>
+        <div class="contact">
+          <a class="btn primary" href="mailto:me@hussam.pw">✉️ me@hussam.pw</a>
+          <a class="btn" href="https://wa.me/96899007996" target="_blank" rel="noopener">💬 واتساب</a>
+          <a class="btn" href="tel:+96899007996">📞 <bdi dir="ltr">+968 9900 7996</bdi></a>
+          <a class="btn" href="tel:+967772585353">📞 <bdi dir="ltr">+967 772 585353</bdi></a>
+          <a class="btn" href="https://hussam.pw" target="_blank" rel="noopener">🌐 hussam.pw</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2 class="rise">قبل أن تبدأ</h2>
+    <p class="sub">كل يوم مشروع Flutter مستقل داخل مجلده.</p>
+    <div class="how">
+      <div class="step rise" style="--i:1">
+        <h4><span>01</span>المتطلبات</h4>
+        <p>Flutter 3.47.9 (Dart 3.13.7) و VS Code أو Android Studio، وجهاز أو محاكي (أو <bdi dir="ltr" class="nw"><code>-d chrome</code> / <code>-d linux</code></bdi>).</p>
+        <pre>flutter --version
+flutter doctor</pre>
+      </div>
+      <div class="step rise" style="--i:2">
+        <h4><span>02</span>تشغيل أمثلة يوم</h4>
+        <p>ادخل مجلد أمثلة اليوم، ثم اختر الدرس من القائمة في التطبيق.</p>
+        <pre><span class="c"># مثال: اليوم الأول</span>
+cd day1/day1_examples
+flutter pub get
+dart run build_runner build -d
+flutter run</pre>
+      </div>
+      <div class="step rise" style="--i:3">
+        <h4><span>03</span>التحكم في العرض</h4>
+        <p><kbd>→</kbd> <kbd>Space</kbd> للتالي · <kbd>←</kbd> للسابق · <kbd>F</kbd> شاشة كاملة · <kbd>O</kbd> كل الشرائح. العروض والخطوط تعمل بدون إنترنت.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">© 2026 حسام حسين (Hussam Hussein) · ورشة Flutter المتقدمة · <a href="https://hussam.pw" target="_blank" rel="noopener">hussam.pw</a></footer>
+
+<script>
+// بيانات الأيام: الدروس بنفس الأرقام والعناوين الموجودة في قائمة كل تطبيق
+// d: true = درس Dart
+const days = [
+  { n: 1, title: 'Riverpod', dart: 'Futures و async/await', ready: true,
+    lessons: [
+      ['Futures و async/await', true], ['الأساسيات و ref'], ['أنواع الـ Providers'], ['توليد الكود'],
+      ['AsyncValue'], ['family و autoDispose'], ['حقن الاعتماديات'], ['Overrides'],
+    ] },
+  { n: 2, title: 'التنقل (go_router) والشبكات (Dio)', dart: 'Records · Sealed classes · freezed', ready: true,
+    lessons: [
+      ['Records و Sealed classes', true], ['freezed و JSON', true], ['go_router: الإعداد والباراميترات'],
+      ['ShellRoute والمسارات المتداخلة'], ['redirect و Deep links'], ['Dio: الإعداد و Interceptors'],
+      ['معالجة الأخطاء'], ['Access و Refresh tokens'], ['Pagination'],
+    ] },
+  { n: 3, title: 'التخزين المحلي وقواعد البيانات + المعمارية', dart: 'Generics · Streams', ready: true,
+    lessons: [
+      ['Generics', true], ['Streams و StreamController', true], ['الإعدادات والتخزين الآمن'],
+      ['الملفات مع path_provider'], ['SQL و Drift'], ['Migrations و watch()'], ['كاش بيانات الـ API'],
+      ['Clean Architecture'], ['Offline-first والمزامنة'],
+    ] },
+  { n: 4, title: 'الاختبارات + واجهات المستخدم', dart: 'Extension methods', ready: true,
+    lessons: [
+      ['Extension methods', true], ['Unit tests و mocktail'], ['اختبار Providers و Widgets'], ['Integration tests'],
+      ['الأنيميشن'], ['Slivers'], ['CustomPainter'], ['Responsive و Theming'], ['الترجمة و RTL و الوصول'],
+    ] },
+  { n: 5, title: 'الأداء، التكامل مع النظام، الأمان، النشر', dart: 'Isolates', ready: true,
+    lessons: [
+      ['Isolates', true], ['DevTools وإعادة البناء'], ['القوائم الطويلة والصور'], ['Platform Channels و Pigeon'],
+      ['الصلاحيات والكاميرا والموقع'], ['الإشعارات'], ['الأمان'], ['Flavors والتوقيع'],
+      ['النشر و CI/CD والأعطال'],
+    ] },
+];
+
+const grid = document.getElementById('daysGrid');
+days.forEach((d, i) => {
+  const el = document.createElement('article');
+  el.className = 'day rise';
+  el.style.setProperty('--i', 6 + i);
+  const lessons = d.lessons.map(([t, isDart], k) =>
+    `<li class="${isDart ? 'd' : ''}"><i>${k + 1}</i><span>${t}</span></li>`).join('');
+  const dis = d.ready ? '' : ' soon';
+  el.innerHTML = `
+    <span class="num">اليوم ${d.n}</span>
+    <h3>${d.title}${d.ready ? '' : '<span class="badge-soon">قيد التجهيز</span>'}</h3>
+    <div class="dart">${d.dart}</div>
+    ${d.lessons.length ? `<div class="meta">${d.lessons.length} دروس</div>
+    <details><summary>الدروس</summary><ol>${lessons}</ol></details>` : ''}
+    <div class="links">
+      <a class="btn primary${dis}" href="day${d.n}/presentation.html">▶ العرض</a>
+      <a class="btn${dis}" href="day${d.n}/README.md">دليل الأمثلة</a>
+      <a class="btn${dis}" href="day${d.n}/day${d.n}_examples/">مجلد الأمثلة</a>
+    </div>`;
+  grid.appendChild(el);
+});
+</script>
+</body>
+</html>

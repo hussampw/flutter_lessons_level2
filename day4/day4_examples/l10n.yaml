@@ -1,0 +1,6 @@
+# إعداد gen-l10n (الدرس 9) — يولّد lib/l10n/app_localizations*.dart
+# التوليد تلقائي مع flutter run / flutter pub get، أو يدوياً: flutter gen-l10n
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+nullable-getter: false

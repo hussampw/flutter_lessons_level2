@@ -1,0 +1,2018 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورشة Flutter المتقدمة — اليوم الأول</title>
+<meta name="description" content="عرض اليوم الأول: Dart المتقدم و Riverpod — يطابق أمثلة day1_examples">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Identity: Dart/Flutter navy + sky, amber for "run" cues
+   ============================================================ */
+:root{
+  --bg:#061A2E; --bg2:#0B2A47; --card:#0E3156; --code:#04111F;
+  --ink:#F3F7FB; --muted:#9FB3C8; --sky:#54C5F8; --blue:#13B9FD; --deep:#0175C2;
+  --amber:#FFC108; --teal:#2EE6A6; --rose:#FF6B81;
+  --sans:'Tajawal',system-ui,sans-serif; --mono:'JetBrains Mono','Fira Code',monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+code{font-family:var(--mono)}
+
+/* ---------- stage (16:9, scaled to fit) ---------- */
+#stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:var(--bg);
+  --enter:-80px;--leave:80px}
+#stage.back{--enter:80px;--leave:-80px}
+#stage::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1.2px,transparent 1.2px);background-size:40px 40px;pointer-events:none}
+.bgshape{position:absolute;pointer-events:none}
+.bg1{left:-160px;bottom:-140px;width:680px;height:680px;background:linear-gradient(135deg,rgba(84,197,248,.18),rgba(1,117,194,.04));clip-path:polygon(0 100%,100% 0,100% 42%,42% 100%)}
+.bg2{left:150px;bottom:-230px;width:460px;height:460px;background:rgba(19,185,253,.10);clip-path:polygon(0 100%,100% 0,100% 46%,46% 100%)}
+.bg3{right:-120px;top:-160px;width:420px;height:420px;background:radial-gradient(circle at 50% 50%,rgba(84,197,248,.16),transparent 65%)}
+
+/* ---------- slides & transitions (RTL: next enters from the left) ---------- */
+.slide{position:absolute;inset:0;padding:90px 88px 64px;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transform:translateX(var(--enter));pointer-events:none;
+  transition:opacity .55s var(--ease),transform .55s var(--ease),visibility 0s linear .55s}
+.slide.active{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition-delay:0s}
+.slide.leaving{transform:translateX(var(--leave))}
+.slide::before{content:attr(data-kicker);position:absolute;top:34px;right:88px;font-size:24px;font-weight:700;color:var(--sky);letter-spacing:.2px}
+.slide::after{content:'ورشة Flutter المتقدمة · اليوم الأول';position:absolute;bottom:26px;right:88px;font-size:22px;font-weight:500;color:#C9D6E3}
+
+/* ---------- staggered entrance ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.slide.active .a{animation:rise .7s var(--ease) both;animation-delay:calc(var(--i,0)*90ms + 120ms)}
+.slide.active .ln{animation:rise .45s var(--ease) both;animation-delay:calc(var(--pi,0)*90ms + var(--i,0)*38ms + 260ms)}
+
+/* ---------- typography ---------- */
+h1,h2,h3{margin:0;font-weight:800;line-height:1.2}
+h2{font-size:60px;margin-bottom:24px}
+h2 .en{font-family:var(--mono);font-weight:600;font-size:.78em;color:var(--sky);direction:ltr;unicode-bidi:isolate}
+.body{flex:1;min-height:0;display:flex;flex-direction:column}
+.cols{display:flex;gap:44px;flex:1;min-height:0;align-items:flex-start}
+.col{min-width:0}
+.col.text{flex:1}
+.col.code{flex:1.5}
+.cols.wide .col.code{flex:2}
+.cols.even .col.code{flex:1}
+.cols.diagram .col.text{flex:1.15}
+.cols.diagram .col.dia{flex:1;align-self:stretch}
+.cols.diagram.wd .col.text{flex:1}
+.cols.diagram.wd .col.dia{flex:1.25}
+.lead{font-size:34px;line-height:1.5;margin:0 0 22px;color:var(--ink)}
+.lead b{color:var(--sky)}
+ul.bul{list-style:none;margin:0;padding:0}
+ul.bul li{position:relative;font-size:32px;line-height:1.45;padding-right:40px;margin-bottom:16px}
+ul.bul li::before{content:'';position:absolute;right:6px;top:.62em;width:16px;height:16px;border-radius:5px;background:var(--sky);transform:rotate(45deg) scale(.9)}
+ul.bul li b{color:var(--sky);font-weight:700}
+ul.bul.tight li{font-size:30px;margin-bottom:12px}
+.ic{font-family:var(--mono);font-size:.86em;background:rgba(84,197,248,.12);border:1px solid rgba(84,197,248,.25);border-radius:8px;padding:1px 10px;margin:0 4px;direction:ltr;unicode-bidi:isolate;color:#CFE6FF;white-space:nowrap}
+.muted{color:var(--muted)}
+.note{font-size:28px;line-height:1.5;color:var(--muted);margin-top:12px}
+
+/* callouts */
+.warn,.tip,.key{border-radius:18px;padding:16px 22px;font-size:29px;line-height:1.45;margin-top:14px;border:1px solid}
+.warn{background:rgba(255,107,129,.10);border-color:rgba(255,107,129,.45)}
+.tip{background:rgba(46,230,166,.09);border-color:rgba(46,230,166,.4)}
+.key{background:rgba(255,193,8,.09);border-color:rgba(255,193,8,.45)}
+.warn b,.tip b,.key b{font-weight:800}
+.warn b{color:var(--rose)} .tip b{color:var(--teal)} .key b{color:var(--amber)}
+
+/* ---------- code blocks ---------- */
+pre.code{position:relative;margin:0;direction:ltr;text-align:left;background:var(--code);border:1px solid rgba(84,197,248,.24);
+  border-radius:20px;padding:46px 22px 20px;font:500 27px/1.36 var(--mono);color:#E6EEF7;overflow:hidden;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.35)}
+pre.code.sm{font-size:25px;padding-top:42px}
+pre.code::before{content:attr(data-file);position:absolute;top:0;right:0;font:500 19px/1 var(--mono);color:var(--muted);padding:10px 16px;background:rgba(255,255,255,.05);border-radius:0 19px 0 12px}
+pre.code::after{content:'';position:absolute;top:14px;left:18px;width:12px;height:12px;border-radius:50%;background:var(--rose);box-shadow:20px 0 0 var(--amber),40px 0 0 var(--teal)}
+pre.code code{display:block;white-space:pre}
+.ln{display:block;white-space:pre;min-height:1.36em}
+.kw{color:#FF8FB8}.ty{color:#8BE9FD}.st{color:#C3E88D}.nu{color:#FFD166}.cm{color:#AFC1D4;font-style:italic}.an{color:#FFC108}.fn{color:#D8EAFF}.ip{color:#FFD166}
+.cm[dir=rtl],.st[dir=rtl]{unicode-bidi:isolate}
+.ip{direction:ltr;unicode-bidi:isolate}
+.stack{display:flex;flex-direction:column;gap:18px;width:100%}
+
+/* run cue */
+.run{margin-top:auto;display:flex;align-items:center;gap:26px;align-self:flex-start;background:rgba(255,193,8,.10);border:1.5px solid rgba(255,193,8,.55);border-radius:16px;padding:12px 22px;font-size:29px}
+.run .lbl{font-weight:800;color:var(--amber);white-space:nowrap}
+.run .lbl::before{content:'▶';display:inline-block;margin-left:10px;font-size:.8em}
+.run code{direction:ltr;unicode-bidi:isolate;font-size:.92em;background:rgba(0,0,0,.35);padding:6px 14px;border-radius:10px;color:#FFE08A}
+.run .menu{color:#C9D6E3;font-size:1em;border-right:2px solid rgba(255,193,8,.4);padding-right:24px}
+.run .menu .ic{font-size:.9em}
+.body + .run{margin-top:22px}
+
+/* tables */
+table.tbl{width:100%;border-collapse:collapse;font-size:29px;line-height:1.4}
+table.tbl th{background:rgba(84,197,248,.14);color:var(--sky);font-weight:800;text-align:right;padding:14px 20px;border-bottom:2px solid rgba(84,197,248,.4)}
+table.tbl td{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.09);vertical-align:top}
+table.tbl tr:last-child td{border-bottom:0}
+table.tbl td.mono{font-family:var(--mono);direction:ltr;text-align:left;color:#CFE6FF;font-size:26px}
+table.tbl th.l{text-align:left;direction:ltr}
+table.tbl td b{color:var(--sky)}
+table.tbl .ok{color:var(--teal);font-weight:800} table.tbl .no{color:var(--rose);font-weight:800}
+
+/* chips / cards */
+.chips{display:flex;flex-wrap:wrap;gap:12px}
+.chips span{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-size:24px;padding:8px 18px;border-radius:999px;border:1px solid rgba(84,197,248,.4);background:rgba(84,197,248,.08);color:#CFE6FF}
+.cards{display:grid;gap:22px}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards.three{grid-template-columns:1fr 1fr 1fr}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:20px;padding:22px 26px}
+.card h3{font-size:32px;color:var(--sky);margin-bottom:12px}
+.card h3 .ic{font-size:.8em}
+.card p,.card li{font-size:28px;line-height:1.45;margin:0}
+.card ol,.card ul{margin:0;padding-right:28px}
+.card li{margin-bottom:8px}
+
+/* agenda */
+.agenda{display:grid;grid-template-columns:1fr 1fr;gap:30px;flex:1}
+.agenda .part{background:rgba(255,255,255,.035);border:1px solid rgba(84,197,248,.25);border-radius:24px;padding:26px 30px}
+.agenda h3{font-size:38px;color:var(--sky);margin-bottom:16px;display:flex;align-items:center;gap:14px}
+.agenda h3 .tag{font-family:var(--mono);font-size:24px;background:var(--deep);color:#fff;border-radius:10px;padding:4px 12px;direction:ltr}
+.agenda ol{margin:0;padding-right:34px;font-size:30px;line-height:1.55}
+.agenda li span{color:var(--muted);font-size:.85em}
+
+/* title + divider */
+.slide.title,.slide.divider{justify-content:center;align-items:flex-start}
+.slide.title::before,.slide.divider::before{content:none}
+.slide.title .kick,.slide.divider .kick{font-size:30px;color:var(--sky);font-weight:700;margin-bottom:18px}
+.slide.title h1{font-size:118px;letter-spacing:-.5px;margin-bottom:10px}
+.slide.title h1 .en{font-family:var(--mono);font-weight:600;color:var(--sky);direction:ltr;unicode-bidi:isolate;font-size:.9em}
+.slide.title h2{font-size:52px;font-weight:500;color:var(--muted);margin-bottom:44px}
+.slide.title .hint{margin-top:40px;color:var(--muted);font-size:26px}
+.slide.divider h1{font-size:120px}
+.slide.divider .big{font-size:64px;color:var(--sky);font-weight:800;margin-bottom:14px}
+.slide.divider .sub{font-size:34px;color:var(--muted);margin-top:16px;max-width:1300px;line-height:1.5}
+.mark{position:relative;width:150px;height:150px;margin-bottom:34px}
+.mark i{position:absolute;display:block}
+.mark .m1{left:0;top:0;width:150px;height:150px;background:var(--sky);clip-path:polygon(0 58%,58% 0,100% 0,0 100%)}
+.mark .m2{left:0;top:0;width:150px;height:150px;background:var(--deep);clip-path:polygon(42% 100%,100% 42%,100% 72%,72% 100%)}
+.mark .m3{left:0;top:0;width:150px;height:150px;background:#042B59;clip-path:polygon(42% 100%,57% 85%,72% 100%)}
+
+/* recap, exercises */
+.recap{display:grid;grid-template-columns:1fr 1fr;gap:34px;flex:1}
+.recap .part h3{font-size:34px;color:var(--sky);margin-bottom:14px}
+.recap ul{list-style:none;margin:0;padding:0}
+.recap li{font-size:28px;line-height:1.45;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.recap li b{color:var(--ink);font-weight:800}
+.recap li .ic{font-size:.82em}
+.ex{counter-reset:ex;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:18px 26px}
+.ex li{counter-increment:ex;position:relative;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:18px;padding:18px 84px 18px 22px;font-size:28px;line-height:1.45}
+.ex li::before{content:counter(ex);position:absolute;right:20px;top:16px;width:46px;height:46px;border-radius:12px;background:var(--amber);color:#042B59;font-weight:800;font-size:28px;display:flex;align-items:center;justify-content:center}
+.ex li.wide{grid-column:1/-1}
+
+/* day 2 preview */
+.next{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:10px}
+.next .card h3{font-size:40px}
+.next .card li{font-size:29px}
+
+/* timing bars (slide 5) */
+.bars{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+.bars .bar span{display:block;font-size:27px;margin-bottom:6px;color:var(--muted)}
+.bars .bar i{display:block;width:var(--w);font-style:normal;font-family:var(--mono);font-size:24px;padding:8px 16px;border-radius:10px;background:linear-gradient(90deg,var(--deep),var(--sky));color:#042B59;font-weight:600;direction:ltr;text-align:left;transform-origin:right}
+.slide.active .bars .bar i{animation:grow .9s var(--ease) both;animation-delay:calc(var(--i,0)*90ms + 500ms)}
+@keyframes grow{from{transform:scaleX(0)}to{transform:none}}
+
+/* layer stack (DI) */
+.layers{display:flex;flex-direction:column;gap:10px}
+.layers .ly{background:var(--card);border:1.5px solid rgba(84,197,248,.4);border-radius:14px;padding:12px 18px;font-size:27px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.layers .ly code{color:#CFE6FF;font-size:24px;direction:ltr}
+.layers .arrow{text-align:center;color:var(--sky);font-size:26px;line-height:1}
+
+/* class-modifier mini table */
+.mods{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:center;font-size:28px}
+.mods code{font-size:26px;color:var(--amber);direction:ltr}
+
+/* ============================================================
+   Diagrams (base CSS = final state; .play adds motion)
+   ============================================================ */
+.diagram{position:relative;width:100%;height:100%}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes dim{from{opacity:1}to{opacity:.3}}
+
+/* 1) event loop */
+.el{display:flex;flex-direction:column;gap:6px}
+.el .lane{display:flex;align-items:center;gap:22px;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.25);border-radius:16px;padding:10px 20px;min-height:86px}
+.el .lane.ev{border-color:rgba(255,193,8,.4)}
+.el .lt{width:330px;flex:none;font-size:25px;color:var(--sky);font-weight:700;line-height:1.2}
+.el .lt small{display:block;font:500 19px/1.3 var(--sans);color:#C9D6E3;margin-top:4px}
+.el .lane.ev .lt{color:var(--amber)}
+.el .chips{gap:10px}
+.el .chip{font:700 27px/1 var(--mono);background:var(--deep);color:#fff;padding:13px 18px;border-radius:12px;border:0}
+.el .lane.ev .chip{background:#8a6400}
+.el .larrow{display:flex;align-items:center;gap:14px;padding:0 44px;color:var(--amber);font-size:20px;line-height:1.2}
+.el .larrow i{font-style:normal;font-size:34px;line-height:1}
+.el .larrow b{font-weight:800}
+.el .console{flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:8px;background:var(--code);border-radius:16px;padding:10px 22px;font:500 26px/1.45 var(--mono);direction:ltr;text-align:left;border:1px solid rgba(84,197,248,.2)}
+.el .console .ct{color:#C9D6E3;font-family:var(--sans);direction:rtl;text-align:right;font-size:22px;margin-bottom:4px}
+.el .o{color:#C3E88D;unicode-bidi:isolate} .el .o.ev{color:#FFD166}
+.play.el .chip{animation:pop .4s both var(--d),dim .5s forwards var(--dc)}
+.play.el .o{animation:fadein .35s both var(--d)}
+
+/* 2) stream */
+.sd{display:flex;flex-direction:column;justify-content:center;gap:24px}
+.sd .row{display:flex;align-items:center}
+.sd .src{width:224px;background:var(--card);border:2px solid var(--sky);border-radius:18px;padding:14px 10px;text-align:center;font-size:23px;line-height:1.4}
+.sd .src b{display:block;font-family:var(--mono);font-size:19px;color:var(--sky);direction:ltr}
+.sd .src em{display:block;font-style:normal;color:var(--muted);font-family:var(--mono);font-size:19px;direction:ltr}
+.sd .pipe{flex:1;position:relative;height:18px;margin:0 0 0 26px;border-radius:9px 0 0 9px;background:linear-gradient(90deg,rgba(84,197,248,.08),rgba(84,197,248,.55))}
+.sd .pipe::after{content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%);border:12px solid transparent;border-right:18px solid rgba(84,197,248,.55)}
+.sd .bub{position:absolute;top:50%;right:var(--p);transform:translate(50%,-50%);background:var(--sky);color:#042B59;font:700 23px var(--mono);padding:9px 14px;border-radius:999px;white-space:nowrap;unicode-bidi:isolate}
+.sd .bub.err{background:var(--rose);color:#fff}
+.sd .bub.done{background:var(--teal);color:#042B59}
+.sd .subs{display:flex;gap:14px}
+.sd .sub{flex:1;background:var(--card);border:1px solid rgba(84,197,248,.4);border-radius:14px;padding:12px 16px;font-size:24px;line-height:1.35}
+.sd .split{text-align:center;color:var(--muted);font-size:22px;margin:-8px 0}
+.sd .sub b{font-family:var(--mono);color:var(--sky);direction:ltr;unicode-bidi:isolate}
+.sd .sub i{display:block;font-style:normal;color:var(--muted);font-size:21px;font-family:var(--mono);direction:ltr;text-align:left}
+.sd .got{display:block;font-size:22px;color:#C3E88D;margin-top:4px}
+.sd .axis{display:flex;justify-content:flex-start;color:#C9D6E3;font-size:23px;padding:0 250px 0 20px;margin-top:-10px}
+.play.sd .bub{animation:flow 2.2s cubic-bezier(.3,.6,.3,1) both;animation-delay:var(--d)}
+.play.sd .got{animation:fadein .4s both var(--d)}
+@keyframes flow{from{right:-2%;opacity:0}12%{opacity:1}to{right:var(--p);opacity:1}}
+
+/* 3) isolates */
+.iso{display:flex;align-items:stretch}
+.iso .ibox{width:210px;background:var(--card);border:2px solid var(--sky);border-radius:20px;padding:18px 12px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
+.iso .ibox.worker{border-color:var(--amber)}
+.iso h4{margin:0;font:700 23px var(--mono);color:var(--sky);direction:ltr}
+.iso .worker h4{color:var(--amber)}
+.iso .mem{font-size:22px;line-height:1.35;color:#C9D6E3;border:1px dashed rgba(255,255,255,.3);border-radius:10px;padding:10px 10px 12px;width:100%}
+.iso .port{font:600 16px var(--mono);background:rgba(84,197,248,.15);border-radius:10px;padding:8px 4px;width:100%;direction:ltr;overflow-wrap:anywhere}
+.iso .heart{font-size:30px;margin-top:auto}
+.iso .cpu{font:600 21px var(--mono);color:var(--amber);margin-top:auto;direction:ltr}
+.iso .lanes{flex:1;display:flex;flex-direction:column;justify-content:space-around;padding:24px 22px;min-width:0}
+.iso .msg{position:relative;height:84px}
+.iso .msg .line{position:absolute;left:12px;right:12px;top:58px;height:3px;background:rgba(255,255,255,.28)}
+.iso .tol .line::before{content:'';position:absolute;left:-2px;top:50%;transform:translateY(-50%);border:11px solid transparent;border-right:16px solid rgba(255,255,255,.6)}
+.iso .tor .line::before{content:'';position:absolute;right:-2px;top:50%;transform:translateY(-50%);border:11px solid transparent;border-left:16px solid rgba(255,255,255,.6)}
+.iso .msg .lbl{position:absolute;top:8px;left:6px;right:6px;text-align:center;font:600 17px var(--mono);color:var(--ink);direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.iso .msg .lbl .n{display:inline-block;background:var(--sky);color:#042B59;border-radius:8px;padding:1px 8px;margin-right:8px;font-weight:700}
+.iso .dot{position:absolute;top:49px;width:22px;height:22px;border-radius:50%;background:var(--sky);box-shadow:0 0 16px var(--sky)}
+.iso .tor .dot{background:var(--amber);box-shadow:0 0 16px var(--amber)}
+.iso .tol .dot{right:calc(100% - 22px)}
+.iso .tor .dot{left:calc(100% - 22px)}
+.play.iso .tol .dot{animation:toL 1.3s ease-in-out both var(--d)}
+.play.iso .tor .dot{animation:toR 1.3s ease-in-out both var(--d)}
+.play.iso .msg .lbl{animation:fadein .4s both calc(var(--d) + .2s)}
+.play.iso .heart{animation:beat 1s ease-in-out infinite}
+@keyframes toL{from{right:0}to{right:calc(100% - 22px)}}
+@keyframes toR{from{left:0}to{left:calc(100% - 22px)}}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+
+/* 4) riverpod graph (fixed 900x640 coordinate space) */
+.rp{width:940px;height:780px}
+.rp .scope{position:absolute;left:0;right:0;top:0;height:470px;border:2px dashed rgba(84,197,248,.65);border-radius:26px}
+.rp .scope-title{position:absolute;top:-22px;right:34px;background:var(--bg);padding:0 14px;color:var(--sky);font:800 27px var(--sans)}
+.rp .scope-title code{color:var(--sky)}
+.rp .node,.rp .wnode{position:absolute;background:var(--card);border:2px solid var(--sky);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 12px}
+.rp .node{width:300px;height:130px}
+.rp .node b,.rp .wnode b{font:700 27px var(--mono);direction:ltr;unicode-bidi:isolate;color:var(--ink)}
+.rp .node small,.rp .wnode small{font:500 23px/1.3 var(--sans);color:#D5E1EC;text-align:center}
+.rp .wnode small{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-size:20px}
+.rp .p1{top:90px;right:50px}
+.rp .p2{top:90px;left:50px}
+.rp .p3{top:300px;left:300px;width:340px;border-color:var(--teal)}
+.rp .wnode{top:570px;width:430px;height:150px;border-color:rgba(255,255,255,.45)}
+.rp .w1{right:30px}
+.rp .w2{left:30px}
+.rp .flag{position:absolute;top:-18px;left:16px;background:var(--amber);color:#042B59;font:800 20px var(--sans);padding:3px 12px;border-radius:999px;opacity:0}
+.rp svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.rp svg line,.rp svg path{stroke:rgba(255,255,255,.45);stroke-width:3;fill:none;marker-start:url(#dot);marker-end:url(#arr)}
+.rp svg text{fill:#C9D6E3;font:600 20px var(--mono);direction:ltr;text-anchor:start}
+.rp .pulse{position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--amber);box-shadow:0 0 18px var(--amber);opacity:0;offset-rotate:0deg}
+.rp .pu1{offset-path:path('M245 570 L160 220')}
+.rp .pu2{offset-path:path('M300 220 L380 300')}
+.rp .pu3{offset-path:path('M470 430 L695 570')}
+.play.rp .pulse{animation:travel .8s linear both;animation-delay:var(--d)}
+.play.rp .flash{animation:flash 1s both var(--d)}
+.play.rp .flag{animation:flagin 1.4s both var(--d)}
+@keyframes travel{0%{offset-distance:0%;opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+@keyframes flash{0%{box-shadow:none}30%{box-shadow:0 0 0 5px var(--amber),0 0 40px var(--amber)}100%{box-shadow:none}}
+@keyframes flagin{0%{opacity:0;transform:translateY(8px)}20%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+
+/* 5) autoDispose */
+.ad{display:flex;gap:26px}
+.ad .screens{display:flex;flex-direction:column;align-items:center;gap:8px;width:330px}
+.ad .scr{width:300px;border:3px solid rgba(255,255,255,.28);border-radius:20px;overflow:hidden;background:#0d2440}
+.ad .bar{background:var(--deep);padding:7px 12px;font:700 20px var(--mono);direction:ltr;text-align:left;white-space:nowrap}
+.ad .scr ul{list-style:none;margin:0;padding:8px 14px;font-size:24px}
+.ad .scr li{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ad .scr li.hi{color:var(--sky);font-weight:700}
+.ad .scr .bd{padding:14px;font-size:24px;line-height:1.5;text-align:center}
+.ad .nav{display:flex;gap:26px;font-size:24px;color:#C9D6E3;font-weight:700}
+.ad .nav span{padding:4px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2)}
+.ad .store{flex:1;border:2px dashed rgba(84,197,248,.65);border-radius:24px;padding:36px 22px 22px;position:relative;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.ad .stt{position:absolute;top:-20px;right:28px;background:var(--bg);padding:0 12px;color:var(--sky);font-weight:800;font-size:25px}
+.ad .pv{background:var(--card);border:2px solid var(--sky);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ad .pv b{font:700 25px var(--mono);direction:ltr;unicode-bidi:isolate;flex-basis:100%;color:var(--ink)}
+.ad .s{font-size:24px;padding:5px 14px;border-radius:999px;background:rgba(255,255,255,.08)}
+.ad .s.drop{background:rgba(255,107,129,.15)} .ad .s.keep{background:rgba(255,193,8,.15)} .ad .s.create{background:rgba(46,230,166,.15)}
+.ad .log{font:500 27px/1.5 var(--mono);direction:ltr;text-align:left;color:#C9D6E3;background:var(--code);border-radius:12px;padding:12px 16px}
+.play.ad .s1{animation:scrA 9s both}
+.play.ad .s2{animation:scrB 9s both}
+.play.ad .push{animation:navP 9s both} .play.ad .pop{animation:navQ 9s both}
+.play.ad .pv1{animation:life1 9s both} .play.ad .pv2{animation:life2 9s both}
+.play.ad .s{opacity:0}
+.play.ad .s.c1{animation:chipA 9s both} .play.ad .s.k1{animation:chipK 9s both}
+.play.ad .s.d2{animation:chipD2 9s both} .play.ad .s.d1{animation:chipD1 9s both}
+@keyframes scrA{0%,12%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}16%,40%{border-color:rgba(255,255,255,.28);box-shadow:none}44%,100%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}}
+@keyframes scrB{0%,12%{border-color:rgba(255,255,255,.28);box-shadow:none}16%,40%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}44%,100%{border-color:rgba(255,255,255,.28);box-shadow:none}}
+@keyframes navP{0%,10%{color:var(--muted)}13%,17%{color:var(--amber);border-color:var(--amber)}22%,100%{color:var(--muted)}}
+@keyframes navQ{0%,38%{color:var(--muted)}41%,45%{color:var(--amber);border-color:var(--amber)}50%,100%{color:var(--muted)}}
+@keyframes life1{0%,15%{opacity:0;transform:translateY(14px)}19%,80%{opacity:1;transform:none}86%,100%{opacity:.18}}
+@keyframes life2{0%,15%{opacity:0;transform:translateY(14px)}19%,46%{opacity:1;transform:none}52%,100%{opacity:.18}}
+@keyframes chipA{0%,17%{opacity:0}21%,100%{opacity:1}}
+@keyframes chipK{0%,47%{opacity:0}51%,100%{opacity:1}}
+@keyframes chipD2{0%,47%{opacity:0}51%,100%{opacity:1}}
+@keyframes chipD1{0%,81%{opacity:0}85%,100%{opacity:1}}
+
+/* ---------- presenter chrome ---------- */
+#progress{position:fixed;top:0;right:0;height:6px;width:0;background:linear-gradient(90deg,var(--deep),var(--sky));z-index:50;transition:width .4s var(--ease)}
+#counter{position:fixed;bottom:14px;left:18px;z-index:50;font:600 16px var(--mono);color:#C9D6E3;direction:ltr;background:rgba(6,26,46,.7);padding:4px 10px;border-radius:8px;letter-spacing:.5px;transition:opacity .4s}
+#nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:8px;opacity:.35;transition:opacity .3s}
+#nav:hover{opacity:1}
+body.idle #nav,body.idle #counter{opacity:0;pointer-events:none}
+#nav button{background:rgba(6,26,46,.8);border:1px solid rgba(84,197,248,.4);color:var(--sky);width:40px;height:34px;border-radius:8px;font-size:18px;cursor:pointer}
+#overview{position:fixed;inset:0;z-index:100;background:rgba(3,14,26,.96);overflow:auto;padding:28px;display:none}
+#overview.open{display:block}
+#overview .grid{display:grid;gap:18px;grid-template-columns:repeat(5,1fr)}
+#overview .thumb{position:relative;aspect-ratio:16/9;border:2px solid rgba(255,255,255,.15);border-radius:10px;overflow:hidden;cursor:pointer;background:var(--bg);transition:border-color .2s,transform .2s}
+#overview .thumb:hover{border-color:var(--sky);transform:scale(1.03)}
+#overview .thumb.cur{border-color:var(--amber)}
+#overview .thumb .num{position:absolute;bottom:6px;left:8px;z-index:2;font:700 13px var(--mono);color:#fff;background:rgba(0,0,0,.6);padding:2px 7px;border-radius:6px;direction:ltr}
+#overview .thumb .slide{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;opacity:1;visibility:visible;transition:none;pointer-events:none}
+#overview .slide .a,#overview .slide .ln,#overview .diagram *{animation:none!important;opacity:1}
+#overview .slide .flag,#overview .slide .pulse{opacity:0!important}
+#overview .thumb .diagram .s{opacity:1}
+
+/* ---------- static / reduced motion ---------- */
+html.static *,html.static *::before,html.static *::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#audit{display:none}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage">
+<div class="bgshape bg1"></div><div class="bgshape bg2"></div><div class="bgshape bg3"></div>
+
+<!-- ================= 1 TITLE ================= -->
+<section class="slide title">
+  <div class="mark a"><i class="m1"></i><i class="m2"></i><i class="m3"></i></div>
+  <div class="kick a">المستوى الثاني · ورشة عملية على 5 أيام</div>
+  <h1 class="a">ورشة <span class="en">Flutter</span> المتقدمة</h1>
+  <h2 class="a">اليوم الأول — Dart المتقدم و Riverpod</h2>
+  <div class="chips a"><span>Flutter 3.47.9</span><span>Dart 3.13.7</span><span>flutter_riverpod 3.5.0</span><span>riverpod_generator 4.0.10</span><span>freezed 4.0.3</span></div>
+  <div class="hint a">→ أو Space للتقدّم · O نظرة عامة على الشرائح · F ملء الشاشة</div>
+</section>
+
+<!-- ================= 2 AGENDA ================= -->
+<section class="slide" data-kicker="برنامج اليوم">
+  <h2 class="a">ماذا سنتعلّم اليوم؟</h2>
+  <div class="body">
+    <div class="agenda">
+      <div class="part a">
+        <h3><span class="tag">A</span> Dart المتقدم <span class="muted" style="font-size:.6em">— أمثلة صافية بـ dart run</span></h3>
+        <ol>
+          <li>Futures و async/await <span>+ ترتيب حلقة الأحداث</span></li>
+          <li>Streams و StreamController</li>
+          <li>Isolates — التنفيذ المتوازي الحقيقي</li>
+          <li>Records (Dart 3)</li>
+          <li>Sealed Classes و Pattern Matching</li>
+          <li>Generics</li>
+          <li>Extension Methods و Extension Types</li>
+          <li>توليد الكود: freezed + json_serializable</li>
+        </ol>
+      </div>
+      <div class="part a">
+        <h3><span class="tag">B</span> Riverpod <span class="muted" style="font-size:.6em">— تطبيق Flutter بقائمة دروس</span></h3>
+        <ol>
+          <li>الأساسيات: ProviderScope و ref <span>(watch / read / listen)</span></li>
+          <li>أنواع الـ Providers <span>+ كيف أختار؟</span></li>
+          <li>توليد الكود بـ @riverpod</li>
+          <li>AsyncValue: loading / data / error</li>
+          <li>family و autoDispose</li>
+          <li>حقن الاعتماديات (Dependency Injection)</li>
+          <li>Overrides والاختبارات</li>
+        </ol>
+      </div>
+    </div>
+    <p class="note a" style="margin-top:22px">كل موضوع بنفس الإيقاع: <b style="color:var(--sky)">الفكرة</b> ← <b style="color:var(--sky)">الكود</b> ← <b style="color:var(--sky)">الخلاصة والفخاخ</b> ← <b style="color:var(--amber)">▶ شغّل المثال</b></p>
+  </div>
+</section>
+
+<!-- ================= 3 DIVIDER A ================= -->
+<section class="slide divider">
+  <div class="kick a">الجزء A</div>
+  <h1 class="a">Dart المتقدم</h1>
+  <div class="sub a">أمثلة Dart صافية في مجلد <span class="ic">bin/</span> — تُشغَّل بـ <span class="ic">dart run bin/&lt;اسم الملف&gt;</span> بدون محاكي.<br>8 دروس: Futures · Streams · Isolates · Records · Sealed · Generics · Extensions · Codegen</div>
+</section>
+
+<!-- ================= 4 FUTURES: concept ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 1">
+  <h2 class="a">Futures و <span class="en">async/await</span> بالتفصيل</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul">
+        <li class="a">الـ <b>Future</b> هو «وعد» بقيمة ستصل لاحقاً (أو خطأ).</li>
+        <li class="a">Dart تعمل على خيط واحد (Single Thread) مع حلقة أحداث (Event Loop)، لذلك الانتظار لا يوقف البرنامج بل يسمح لمهام أخرى بالعمل.</li>
+        <li class="a">الطريقة القديمة: <span class="ic">then / catchError / whenComplete</span></li>
+        <li class="a">الطريقة الحديثة: <b>async / await</b> مع try / catch / finally — الكود يُقرأ من الأعلى للأسفل كأنه متزامن.</li>
+        <li class="a">رمي خطأ داخل دالة async يحوّله تلقائياً إلى Future فاشل، و<span class="ic">on</span> تلتقط نوع خطأ محدد.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/01_futures_async.dart"><code>Future&lt;String&gt; fetchUserName(int id) async {
+  await Future.delayed(const Duration(milliseconds: 500));
+  if (id &lt;= 0) {
+    throw ArgumentError('رقم المستخدم غير صالح: $id');
+  }
+  return 'مستخدم رقم $id';
+}
+
+Future&lt;void&gt; awaitStyle() async {
+  try {
+    final name = await fetchUserName(-5); // سيفشل عمداً
+    print(name);
+  } on ArgumentError catch (e) {
+    print('خطأ متوقع: ${e.message}');
+  } finally {
+    print('finally تعمل دائماً');
+  }
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 5 FUTURES: sequential vs parallel ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 1">
+  <h2 class="a">تسلسلي مقابل متوازي — من أهم نقاط الأداء</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul">
+        <li class="a"><b>تسلسلي:</b> الطلب الثاني لا يبدأ إلا بعد انتهاء الأول.</li>
+        <li class="a"><b>Future.wait:</b> كل الطلبات تبدأ معاً — عيبه: النتيجة <span class="ic">List&lt;Object&gt;</span> فنحتاج تحويل الأنواع يدوياً.</li>
+        <li class="a"><b>Records (Dart 3):</b> <span class="ic">(f1, f2).wait</span> — الأنواع محفوظة لكل عنصر ✅</li>
+      </ul>
+      <div class="bars a">
+        <div class="bar"><span>تسلسلي: await ثم await</span><i style="--w:100%">≈ 1200ms</i></div>
+        <div class="bar"><span>متوازي: Future.wait أو Record.wait</span><i style="--w:58%">≈ 700ms</i></div>
+      </div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/01_futures_async.dart"><code>// تسلسلي: الطلب الثاني لا يبدأ إلا بعد انتهاء الأول ≈ 1200ms
+final a = await fetchUserName(1);
+final b = await fetchOrdersCount();
+
+// متوازي باستخدام Future.wait: كل الطلبات تبدأ معاً ≈ 700ms
+final results =
+    await Future.wait([fetchUserName(2), fetchOrdersCount()]);
+print('Future.wait: $results');
+
+// متوازي باستخدام Records (Dart 3): الأنواع محفوظة لكل عنصر ✅
+final (name, count) =
+    await (fetchUserName(3), fetchOrdersCount()).wait;
+print('Record.wait: $name / $count');</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 6 FUTURES: timeout / any / Completer ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 1">
+  <h2 class="a"><span class="en">timeout</span> · <span class="en">Future.any</span> · <span class="en">Completer</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul">
+        <li class="a"><b>timeout:</b> إذا لم تنتهِ العملية خلال المهلة نرمي <span class="ic">TimeoutException</span>.</li>
+        <li class="a"><b>Future.any:</b> نأخذ أول نتيجة تصل (مثلاً من عدة خوادم).</li>
+        <li class="a"><b>Completer:</b> تحويل كود يعتمد على callbacks (مكتبة قديمة) إلى Future — نعيد الـ Future فوراً، ويكتمل لاحقاً.</li>
+      </ul>
+      <div class="warn a"><b>⚠️ تنبيه:</b> نسيان <span class="ic">await</span> يعني أن الخطأ قد يضيع ولا يُلتقط! استخدم lint: <span class="ic">unawaited_futures</span> لاكتشاف ذلك.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/01_futures_async.dart"><code>try {
+  await fetchUserName(1).timeout(const Duration(milliseconds: 200));
+} on TimeoutException {
+  print('انتهت المهلة! الخادم بطيء');
+}
+
+final fastest = await Future.any([
+  Future.delayed(const Duration(milliseconds: 300), () =&gt; 'الخادم A'),
+  Future.delayed(const Duration(milliseconds: 100), () =&gt; 'الخادم B'),
+]);
+
+Future&lt;String&gt; legacyApiAsFuture() {
+  final completer = Completer&lt;String&gt;();
+  Timer(const Duration(milliseconds: 300), () {
+    completer.complete('نتيجة من API قديم');
+  });
+  return completer.future; // نعيد الـ Future فوراً، ويكتمل لاحقاً
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 7 EVENT LOOP (diagram) ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 1">
+  <h2 class="a">ترتيب التنفيذ: الكود المتزامن أولاً، ثم <span class="en">microtasks</span>، ثم <span class="en">events</span> <span class="muted" style="font-size:.55em;font-weight:500">(سؤال مقابلات مشهور!)</span></h2>
+  <div class="body"><div class="cols diagram">
+    <div class="col text">
+<pre class="code a sm" data-file="bin/01_futures_async.dart"><code>print('A: كود متزامن');
+Future(() =&gt; print('D: Event (Future عادي)'));
+scheduleMicrotask(() =&gt; print('C: Microtask'));
+Future.microtask(() =&gt; print('C2: Microtask آخر'));
+print('B: كود متزامن');
+// الناتج: A, B, C, C2, D</code></pre>
+      <div class="key a" style="margin-top:20px"><b>لماذا؟</b> الـ microtasks تُنفَّذ كلها قبل أي event جديد — وكل كود متزامن ينتهي أولاً.</div>
+    </div>
+    <div class="col dia">
+      <div class="diagram el a" data-loop="8000">
+        <div class="lane"><div class="lt">Call stack<small>الكود المتزامن — يُنفَّذ فوراً</small></div><div class="chips"><span class="chip" style="--d:.2s;--dc:.5s">A</span><span class="chip" style="--d:2.7s;--dc:2.9s">B</span></div></div>
+        <div class="larrow"><i>↑</i><span><bdi dir="ltr">1)</bdi> عندما يفرغ الـ stack: تُنفَّذ <b>كل</b> الـ microtasks</span></div>
+        <div class="lane"><div class="lt">Microtask queue<small>scheduleMicrotask · Future.microtask</small></div><div class="chips"><span class="chip" style="--d:1.5s;--dc:4s">C</span><span class="chip" style="--d:2.1s;--dc:4.8s">C2</span></div></div>
+        <div class="larrow"><i>↑</i><span><bdi dir="ltr">2)</bdi> ثم event <b>واحد</b> فقط، ثم نعود للخطوة 1</span></div>
+        <div class="lane ev"><div class="lt">Event queue<small>Future() · Timer · I/O</small></div><div class="chips"><span class="chip" style="--d:.9s;--dc:5.9s">D</span></div></div>
+        <div class="console">
+          <div class="ct">الناتج في الطرفية</div>
+          <div class="o" style="--d:.5s">A: كود متزامن</div>
+          <div class="o" style="--d:2.9s">B: كود متزامن</div>
+          <div class="o" style="--d:4s">C: Microtask</div>
+          <div class="o" style="--d:4.8s">C2: Microtask آخر</div>
+          <div class="o ev" style="--d:5.9s">D: Event (Future عادي)</div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run bin/01_futures_async.dart</code></div>
+</section>
+
+<!-- ================= 8 STREAMS: concept ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 2">
+  <h2 class="a">Streams — قيم تصل مع الوقت</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul">
+        <li class="a">الـ <b>Future</b> = قيمة واحدة لاحقاً. الـ <b>Stream</b> = سلسلة قيم تصل مع الوقت (رسائل شات، موقع GPS، تقدّم تحميل).</li>
+        <li class="a">إنشاء Stream بدالة <span class="ic">async*</span> و <span class="ic">yield</span> — yield ترسل قيمة إلى من يستمع.</li>
+        <li class="a"><span class="ic">await for</span>: أبسط طريقة لاستهلاك Stream.</li>
+        <li class="a">التحويلات <span class="ic">where / map / take / distinct</span> تشبه دوال القوائم لكنها تعمل على قيم تصل مع الوقت.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/02_streams.dart"><code>Stream&lt;int&gt; countdown(int from) async* {
+  for (var i = from; i &gt;= 0; i--) {
+    await Future.delayed(const Duration(milliseconds: 200));
+    yield i; // yield ترسل قيمة إلى من يستمع
+  }
+}
+
+await for (final n in countdown(3)) {
+  print('العد: $n');
+}
+
+final evens = Stream.fromIterable([1, 2, 2, 3, 4, 4, 5, 6])
+    .distinct() // تجاهل القيم المكررة المتتالية
+    .where((n) =&gt; n.isEven) // الأرقام الزوجية فقط
+    .map((n) =&gt; 'زوجي: $n') // تحويل كل قيمة
+    .take(2); // أول قيمتين ثم يُغلق تلقائياً</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 9 STREAMCONTROLLER (diagram) ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 2">
+  <h2 class="a"><span class="en">StreamController</span>: نتحكم بنفسنا متى نرسل القيم</h2>
+  <div class="body"><div class="cols diagram">
+    <div class="col text">
+<pre class="code a sm" data-file="bin/02_streams.dart"><code>class ChatService {
+  // broadcast يسمح بأكثر من مستمع في نفس الوقت
+  final _controller =
+      StreamController&lt;String&gt;.broadcast();
+
+  // نكشف الـ Stream فقط (للقراءة) ونخفي الـ Sink (للكتابة)
+  Stream&lt;String&gt; get messages =&gt; _controller.stream;
+
+  void send(String text) {
+    if (_controller.isClosed) return;
+    _controller.add(text); // إرسال قيمة
+  }
+
+  void fail() =&gt;
+      _controller.addError(Exception('انقطع الاتصال'));
+
+  // مهم جداً: إغلاق الـ controller لتجنّب تسريب الذاكرة
+  Future&lt;void&gt; dispose() =&gt; _controller.close();
+}</code></pre>
+    </div>
+    <div class="col dia">
+      <div class="diagram sd a" data-loop="7000">
+        <div class="row">
+          <div class="src"><b>StreamController</b>.broadcast()<em>add() · addError() · close()</em></div>
+          <div class="pipe">
+            <span class="bub" style="--p:12%;--d:.2s">'مرحباً'</span>
+            <span class="bub" style="--p:42%;--d:1.6s">'كيف الحال؟'</span>
+            <span class="bub err" style="--p:70%;--d:3s">addError</span>
+          </div>
+        </div>
+        <div class="axis"><span>← الوقت: القيم تصل واحدة تلو الأخرى إلى المستمعين</span></div>
+        <div class="split">broadcast ← نفس الـ Stream يصل إلى مستمعَين معاً عبر listen()</div>
+        <div class="subs">
+          <div class="sub"><b>sub1</b> شاشة الشات<i>onData · onError · onDone</i><span class="got" style="--d:2.4s">📩 مرحباً · 📩 كيف الحال؟</span><span class="got" style="--d:4.2s">❌ خطأ: انقطع الاتصال</span><span class="got" style="--d:5.4s">✅ أُغلق الـ Stream (بعد close)</span></div>
+          <div class="sub"><b>sub2</b> عدّاد غير المقروء<i>onError: (_) {}</i><span class="got" style="--d:3.8s">unread = 2</span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 10 STREAMS: subscriptions + pitfalls ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 2">
+  <h2 class="a"><span class="en">listen</span> و <span class="en">StreamSubscription</span>: الإيقاف والاستئناف والإلغاء</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <div class="warn a"><b>⚠️</b> كل مستمع يجب أن يعالج الأخطاء، وإلا يصبح الخطأ Unhandled ويُوقف البرنامج.</div>
+      <div class="warn a"><b>⚠️ في Flutter:</b> ألغِ الاشتراك في <span class="ic">dispose()</span> دائماً.</div>
+      <div class="tip a"><b>💡</b> <span class="ic">pause()</span> تخزّن الرسائل (buffer) ثم تصل دفعة واحدة عند <span class="ic">resume()</span>. إذا أردت تجاهل ما فات: <span class="ic">cancel()</span> ثم <span class="ic">listen()</span> من جديد.</div>
+      <p class="note a">في بقية الملف: <span class="ic">Stream.periodic</span> (قيم كل فترة زمنية) و <span class="ic">StreamTransformer</span> (منطق تحويل قابل لإعادة الاستخدام).</p>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/02_streams.dart"><code>final sub1 = chat.messages.listen(
+  (msg) =&gt; print('📩 شاشة الشات: $msg'),
+  onError: (e) =&gt; print('❌ خطأ: $e'),
+  onDone: () =&gt; print('✅ أُغلق الـ Stream'),
+);
+// المستمع الثاني (ممكن لأنه broadcast): يحسب الإشعارات
+final sub2 =
+    chat.messages.listen((_) =&gt; unread++, onError: (_) {});
+
+sub1.pause(); // إيقاف مؤقت: الرسائل تُخزَّن (buffer) ولا تُعرض الآن
+chat.send('رسالة أثناء الإيقاف');
+sub1.resume(); // تصل الرسائل المخزّنة الآن دفعة واحدة
+
+chat.fail(); // إرسال خطأ عبر الـ Stream
+await sub2.cancel();
+await chat.dispose(); // يستدعي onDone عند sub1
+await sub1.cancel();</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run bin/02_streams.dart</code></div>
+</section>
+
+<!-- ================= 11 ISOLATES: concept ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 3">
+  <h2 class="a">Isolates — التنفيذ المتوازي الحقيقي</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>async/await لا يعني «خيط جديد»!</b> كل شيء يعمل على نفس الـ Isolate.</li>
+        <li class="a">حساب ثقيل (معالجة صورة، JSON ضخم، تشفير) ← سيتجمّد الـ UI لأن الخيط مشغول.</li>
+        <li class="a">الـ <b>Isolate</b> = عامل مستقل له ذاكرته الخاصة (لا يشارك المتغيرات) والتواصل معه عبر الرسائل فقط.</li>
+        <li class="a"><span class="ic">Isolate.run</span>: الطريقة الأسهل والأشهر (Dart 2.19+). في Flutter: <span class="ic">compute(countPrimes, limit)</span> بنفس الفكرة.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/03_isolates.dart"><code>// ⚠️ يجب أن تكون دالة top-level أو static لتُرسل إلى Isolate آخر
+int countPrimes(int limit) { ... } // حلقة ثقيلة على المعالج
+
+// 1) بدون Isolate: الخيط الرئيسي مشغول بالكامل
+final syncResult = countPrimes(limit);
+print('بدون Isolate: $syncResult ← ${sw.elapsedMilliseconds}ms '
+    '— نبضات الـ UI: $beats 💀 (متجمّد)');
+
+// 2) Isolate.run: تنشئ Isolate، تنفّذ الدالة، تعيد النتيجة، ثم تغلقه
+final result = await Isolate.run(() =&gt; countPrimes(limit));
+print('Isolate.run: $result ← ${sw.elapsedMilliseconds}ms '
+    '— نبضات الـ UI: $beats ❤️ (يعمل بسلاسة)');
+
+// 3) تشغيل عدة حسابات بالتوازي على أنوية مختلفة
+final parallel = await Future.wait([
+  Isolate.run(() =&gt; countPrimes(1000000)),
+  Isolate.run(() =&gt; countPrimes(2000000)),
+  Isolate.run(() =&gt; countPrimes(3000000)),
+]);</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 12 ISOLATES: spawn + ports (diagram) ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 3">
+  <h2 class="a"><span class="en">Isolate.spawn</span> + <span class="en">Ports</span>: عامل دائم لعدة مهام</h2>
+  <div class="body"><div class="cols diagram">
+    <div class="col text">
+<pre class="code a sm" data-file="bin/03_isolates.dart"><code>// هذه الدالة هي نقطة دخول الـ Isolate الجديد
+void workerEntryPoint(SendPort mainSendPort) {
+  // 1) ننشئ منفذ استقبال خاص بالعامل
+  final workerReceivePort = ReceivePort();
+
+  // 2) نرسل "عنوان" العامل إلى الرئيسي ليتمكن من مراسلته
+  mainSendPort.send(workerReceivePort.sendPort);
+
+  // 3) نستمع للأوامر
+  workerReceivePort.listen((message) {
+    if (message == 'exit') {
+      workerReceivePort.close();
+      Isolate.exit(); // إنهاء العامل
+    }
+    final limit = message as int;
+    mainSendPort.send(
+      'عدد الأوليات حتى $limit = ${countPrimes(limit)}',
+    );
+  });
+}</code></pre>
+    </div>
+    <div class="col dia">
+      <div class="diagram iso a" data-loop="8000">
+        <div class="ibox main"><h4>Main Isolate</h4><div class="mem">ذاكرة خاصة — لا تُشارك</div><div class="port">mainReceivePort</div><div class="heart">❤️ UI سلس</div></div>
+        <div class="lanes">
+          <div class="msg tol" style="--d:.3s"><span class="lbl"><span class="n">1</span>Isolate.spawn(entry, port)</span><div class="line"></div><div class="dot"></div></div>
+          <div class="msg tor" style="--d:2s"><span class="lbl"><span class="n">2</span>workerReceivePort.sendPort</span><div class="line"></div><div class="dot"></div></div>
+          <div class="msg tol" style="--d:3.7s"><span class="lbl"><span class="n">3</span>send(10000)</span><div class="line"></div><div class="dot"></div></div>
+          <div class="msg tor" style="--d:5.4s"><span class="lbl"><span class="n">4</span>'عدد الأوليات = 1229'</span><div class="line"></div><div class="dot"></div></div>
+        </div>
+        <div class="ibox worker"><h4>Worker Isolate</h4><div class="mem">ذاكرة خاصة — نسخة من الرسائل</div><div class="port">workerReceivePort</div><div class="cpu">countPrimes()</div></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 13 ISOLATES: main side + notes ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 3">
+  <h2 class="a">الطرف الرئيسي + ملاحظات مهمة</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <div class="key a"><b>📌 لاحظ:</b> الوقت تقريباً نفسه! الـ Isolate لا يجعل الحساب أسرع، بل يُبعده عن الخيط الرئيسي فيبقى الـ UI سلساً.</div>
+      <ul class="bul tight" style="margin-top:18px">
+        <li class="a">الـ Isolates لا تشارك الذاكرة، البيانات <b>تُنسخ</b> عند الإرسال.</li>
+        <li class="a">إنشاء Isolate له تكلفة، فلا تستخدمه لمهام صغيرة.</li>
+        <li class="a">في Flutter Web لا توجد Isolates حقيقية (<span class="ic">compute</span> تعمل على نفس الخيط).</li>
+        <li class="a">3 حسابات معاً = وقت أطولها تقريباً (وليس مجموعها) — هنا نربح وقتاً فعلاً.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/03_isolates.dart"><code>final mainReceivePort = ReceivePort();
+await Isolate.spawn(workerEntryPoint, mainReceivePort.sendPort);
+
+// نحوّل المنفذ إلى broadcast stream لنقرأ منه أكثر من مرة
+final messages = mainReceivePort.asBroadcastStream();
+
+// أول رسالة من العامل هي الـ SendPort الخاص به
+final workerSendPort = await messages.first as SendPort;
+
+for (final n in [10000, 50000, 100000]) {
+  workerSendPort.send(n); // نرسل مهمة
+  print(await messages.first); // ننتظر الرد
+}
+
+workerSendPort.send('exit');
+mainReceivePort.close();</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run bin/03_isolates.dart</code></div>
+</section>
+
+<!-- ================= 14 RECORDS ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 4">
+  <h2 class="a">Records (Dart 3) — قيم مجمّعة بدون class</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">الـ <b>Record</b> = مجموعة قيم مجمّعة بدون الحاجة لإنشاء class.</li>
+        <li class="a">غير قابلة للتعديل (immutable) · المساواة بالقيمة (==) تلقائياً · الأنواع محفوظة لكل حقل.</li>
+        <li class="a"><b>أشهر استخدام:</b> إرجاع أكثر من قيمة من دالة.</li>
+        <li class="a">حقول مسمّاة ← أوضح عند القراءة، و <span class="ic">typedef</span> لإعطاء اسم للـ Record وإعادة استخدامه: <span class="ic">Point</span>.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/04_records.dart"><code>(double min, double max) minMax(List&lt;double&gt; values) {
+  var min = values.first, max = values.first;
+  for (final v in values) {
+    if (v &lt; min) min = v;
+    if (v &gt; max) max = v;
+  }
+  return (min, max);
+}
+
+({String name, int age, String? email}) parseUser(
+  Map&lt;String, dynamic&gt; json,
+) {
+  return (
+    name: json['name'] as String,
+    age: json['age'] as int,
+    email: json['email'] as String?,
+  );
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 15 RECORDS: destructuring ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 4">
+  <h2 class="a">التفكيك (Destructuring) والمساواة و switch</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">Record موضعي: نصل للحقول بـ <span class="ic">$1</span> و <span class="ic">$2</span>.</li>
+        <li class="a">التفكيك مباشرة إلى متغيرات، و <span class="ic">:name</span> تعني <span class="ic">name: name</span>.</li>
+        <li class="a">المساواة بالقيمة (عكس الـ class العادي).</li>
+        <li class="a">تبديل قيمتين في سطر واحد: <span class="ic">(first, second) = (second, first);</span></li>
+      </ul>
+      <div class="key a"><b>📌 متى Record ومتى class؟</b><br>Record: بيانات مؤقتة صغيرة (إرجاع قيمتين، مفتاح مركّب).<br>class: نموذج له سلوك، أو يُستخدم في أماكن كثيرة، أو يحتاج JSON.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/04_records.dart"><code>final (min, max) = minMax([4, 9, 1, 7]);
+
+// تفكيك الحقول المسمّاة: :name تعني name: name
+final (:name, :age, email: _) = user;
+
+const Point a = (x: 1, y: 2);
+const Point b = (x: 1, y: 2);
+print('a == b ؟ ${a == b}'); // true
+
+final text = switch (response) {
+  (200, final msg) =&gt; 'نجاح: $msg',
+  (404, _) =&gt; 'غير موجود',
+  (&gt;= 500, _) =&gt; 'خطأ في الخادم',
+  _ =&gt; 'حالة أخرى',
+};</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run bin/04_records.dart</code></div>
+</section>
+
+<!-- ================= 16 SEALED ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 5">
+  <h2 class="a">Sealed Classes — المترجم يضمن تغطية كل الحالات</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul">
+        <li class="a"><b>sealed class</b> = class «مغلقة»: كل الأنواع الفرعية معروفة في نفس الملف.</li>
+        <li class="a">الفائدة: المترجم (compiler) يتأكد أنك غطّيت كل الحالات في switch.</li>
+        <li class="a">إذا أضفت حالة جديدة ونسيت معالجتها ← <b>خطأ وقت الترجمة</b> وليس crash للمستخدم!</li>
+        <li class="a">switch expression: لا نحتاج <span class="ic">default</span> لأن الـ sealed تضمن التغطية الكاملة.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/05_sealed_pattern_matching.dart"><code>sealed class Shape {}
+
+class Circle extends Shape {
+  Circle(this.radius);
+  final double radius;
+}
+
+class Square extends Shape {
+  Square(this.side);
+  final double side;
+}
+
+// جرّب حذف أي سطر ← سيظهر خطأ:
+// The type 'Shape' is not exhaustively matched
+double area(Shape shape) =&gt; switch (shape) {
+      Circle(:final radius) =&gt; 3.14 * radius * radius,
+      Square(:final side) =&gt; side * side,
+      Rectangle(:final width, :final height) =&gt; width * height,
+    };</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 17 RESULT<T> ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 5">
+  <h2 class="a">مثال عملي جداً: <span class="en">Result&lt;T&gt;</span> لنتيجة طلب شبكة</h2>
+  <div class="body">
+    <div class="cards three" style="margin-bottom:22px">
+      <div class="card a"><h3><span class="ic">Success&lt;T&gt;</span></h3><p>يحمل <span class="ic">final T data</span></p></div>
+      <div class="card a"><h3><span class="ic">Failure&lt;T&gt;</span></h3><p><span class="ic">message</span> + <span class="ic">int? code</span></p></div>
+      <div class="card a"><h3><span class="ic">Loading&lt;T&gt;</span></h3><p>بدون بيانات — <span class="ic">const Loading()</span></p></div>
+    </div>
+<pre class="code a" data-file="bin/05_sealed_pattern_matching.dart"><code>sealed class Result&lt;T&gt; { const Result(); }
+
+String render(Result&lt;List&lt;String&gt;&gt; result) =&gt; switch (result) {
+      Loading() =&gt; '⏳ جاري التحميل...',
+      // guard باستخدام when: شرط إضافي على النمط
+      Success(data: final items) when items.isEmpty =&gt; '📭 لا توجد بيانات',
+      Success(data: final items) =&gt; '✅ ${items.length} عناصر: $items',
+      Failure(code: 401) =&gt; '🔒 يجب تسجيل الدخول',
+      Failure(:final message) =&gt; '❌ $message',
+    };</code></pre>
+    <p class="note a">سنستخدم نفس الفكرة مع Riverpod (<span class="ic">AsyncValue</span> هو sealed class) ومع Networking لاحقاً.</p>
+  </div>
+</section>
+
+<!-- ================= 18 PATTERNS ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 5">
+  <h2 class="a">أنواع الأنماط (Patterns) الأخرى + كلمات Dart 3 للـ classes</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">نمط القائمة مع <span class="ic">...rest</span></li>
+        <li class="a">نمط الـ Map: مفيد جداً للتحقق من JSON</li>
+        <li class="a">الأنماط المنطقية والعلائقية: <span class="ic">|| &amp;&amp; &gt; &lt;</span></li>
+        <li class="a">نمط النوع مع null-check: <span class="ic">String s when s.length &gt; 3</span></li>
+      </ul>
+      <div class="mods a" style="margin-top:14px">
+        <code>sealed</code><span>حالات مغلقة + switch شامل</span>
+        <code>final</code><span>لا يمكن الوراثة منها خارج المكتبة</span>
+        <code>base</code><span>وراثة فقط (لا implements) خارج المكتبة</span>
+        <code>interface</code><span>implements فقط (لا extends) خارج المكتبة</span>
+      </div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/05_sealed_pattern_matching.dart"><code>// نمط القائمة (List pattern) مع ...rest
+if (numbers case [final first, final second, ...final rest]) {
+  print('الأول=$first الثاني=$second الباقي=$rest');
+}
+
+// نمط الـ Map: مفيد جداً للتحقق من JSON
+if (json case {'user': {'name': String name, 'age': int age}}) {
+  print('JSON صالح: $name ($age)');
+}
+
+// الأنماط المنطقية والعلائقية: || و &amp;&amp; و &gt; و &lt;
+String classify(int score) =&gt; switch (score) {
+      &gt;= 90 &amp;&amp; &lt;= 100 =&gt; 'ممتاز',
+      &gt;= 75 &amp;&amp; &lt; 90 =&gt; 'جيد جداً',
+      &lt; 0 || &gt; 100 =&gt; 'درجة غير صالحة',
+      _ =&gt; 'راسب',
+    };</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run bin/05_sealed_pattern_matching.dart</code></div>
+</section>
+
+<!-- ================= 19 GENERICS ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 6">
+  <h2 class="a">Generics — كود واحد يعمل مع أنواع متعددة</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul">
+        <li class="a">بدل كتابة UserRepository و ProductRepository و OrderRepository بنفس المنطق تقريباً، نكتب <span class="ic">Repository&lt;T&gt;</span> واحد.</li>
+        <li class="a">الـ Generics تعطينا: <b>إعادة استخدام + أمان الأنواع</b> (Type Safety).</li>
+        <li class="a">Dart يستنتج النوع: <span class="ic">Box(42)</span> ← <span class="ic">Box&lt;int&gt;</span></li>
+        <li class="a"><b>القيود</b> (Bounded generics): <span class="ic">T extends num</span> ← نستطيع استخدام <span class="ic">+</span> و <span class="ic">&gt;</span></li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/06_generics.dart"><code>class Box&lt;T&gt; {
+  Box(this.value);
+  final T value;
+
+  // دالة عامة داخل class عام: نحوّل Box&lt;T&gt; إلى Box&lt;R&gt;
+  Box&lt;R&gt; map&lt;R&gt;(R Function(T value) transform) =&gt;
+      Box(transform(value));
+}
+
+T firstOrDefault&lt;T&gt;(List&lt;T&gt; items, T defaultValue) =&gt;
+    items.isEmpty ? defaultValue : items.first;
+
+// T يجب أن يكون رقماً، لذلك نستطيع استخدام + و &gt;
+T maxOf&lt;T extends num&gt;(List&lt;T&gt; values) =&gt;
+    values.reduce((a, b) =&gt; a &gt; b ? a : b);
+
+// maxOf(['a', 'b']); ← خطأ ترجمة: String ليس num ✅</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 20 GENERICS: Repository ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 6">
+  <h2 class="a"><span class="en">Repository&lt;T&gt;</span> — نمط سنستخدمه كثيراً في المشاريع الحقيقية</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">قيد بواجهة: كل نموذج يجب أن يملك <span class="ic">id</span> ← <span class="ic">T extends Entity</span></li>
+        <li class="a">تنفيذ واحد في الذاكرة يعمل مع أي Entity: <span class="ic">InMemoryRepository&lt;User&gt;</span> و <span class="ic">&lt;Product&gt;</span></li>
+        <li class="a">Typedef عام لدوال الـ callback: <span class="ic">JsonFactory&lt;T&gt;</span> لتحويل قائمة JSON إلى قائمة نماذج من أي نوع.</li>
+      </ul>
+      <div class="key a"><b>📌 لماذا لا نستخدم dynamic؟</b> dynamic يلغي فحص الأنواع ← الأخطاء تظهر وقت التشغيل (crash). Generics تكتشف الأخطاء وقت الكتابة + الإكمال التلقائي يعمل.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/06_generics.dart"><code>abstract interface class Entity {
+  String get id;
+}
+
+abstract class Repository&lt;T extends Entity&gt; {
+  Future&lt;List&lt;T&gt;&gt; getAll();
+  Future&lt;void&gt; save(T item);
+}
+
+class InMemoryRepository&lt;T extends Entity&gt;
+    implements Repository&lt;T&gt; {
+  final _store = &lt;String, T&gt;{};
+  @override
+  Future&lt;void&gt; save(T item) async =&gt; _store[item.id] = item;
+}
+final users = InMemoryRepository&lt;User&gt;();
+await users.save(User('u1', 'نورة'));
+// users.save(Product(...)); ← خطأ ترجمة: النوع محمي ✅</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run bin/06_generics.dart</code></div>
+</section>
+
+<!-- ================= 21 EXTENSIONS ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 7">
+  <h2 class="a">Extension Methods — دوال جديدة على أنواع موجودة</h2>
+  <div class="body">
+    <p class="lead a">تضيف دوال لأنواع موجودة (حتى لو لم نكتبها نحن) — <b>بدون وراثة وبدون تعديل الأصل.</b></p>
+<pre class="code a" data-file="bin/07_extension_methods.dart"><code>extension StringX on String {
+  bool get isValidEmail =&gt; RegExp(r'^[\w.+-]+@[\w-]+\.[\w.]+$').hasMatch(this);
+  String get capitalized =&gt;
+      isEmpty ? this : '${this[0].toUpperCase()}${substring(1)}';
+}
+
+// await Future.delayed(2.seconds) بدل Duration(seconds: 2)
+extension DurationX on int {
+  Duration get seconds =&gt; Duration(seconds: this);
+  Duration get ms =&gt; Duration(milliseconds: this);
+}
+
+extension ListX&lt;T&gt; on List&lt;T&gt; {
+  // نسخة آمنة من first لا ترمي خطأ في القائمة الفارغة
+  T? get firstOrNull =&gt; isEmpty ? null : first;
+}</code></pre>
+    <div class="tip a" style="margin-top:16px"><b>💡 في Flutter</b> نستخدمها كثيراً على BuildContext: <span class="ic">context.theme</span> و <span class="ic">context.showSnack('تم الحفظ')</span></div>
+  </div>
+</section>
+
+<!-- ================= 22 EXTENSION TYPES ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 7">
+  <h2 class="a">Extension Types (Dart 3.3+) — نوع جديد «مجاني» فوق نوع موجود</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul">
+        <li class="a">لا يُنشئ كائن إضافي وقت التشغيل (<b>zero-cost</b>).</li>
+        <li class="a">يمنع الخلط بين <span class="ic">UserId</span> و <span class="ic">ProductId</span> رغم أن كلاهما <span class="ic">int</span>.</li>
+        <li class="a">يمكن إضافة تحقق في constructor مسمّى: <span class="ic">UserId.parse('0').isGuest</span></li>
+      </ul>
+      <div class="warn a"><b>⚠️ تنبيه:</b> الـ extensions تعتمد على النوع الثابت (static type) لذلك لا تعمل مع متغير <span class="ic">dynamic</span>: <span class="ic">dynamic x = 'a'; x.capitalized</span> ← خطأ وقت التشغيل.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="bin/07_extension_methods.dart"><code>extension type UserId(int value) {
+  // يمكن إضافة تحقق في constructor مسمّى
+  UserId.parse(String raw) : value = int.parse(raw);
+  bool get isGuest =&gt; value == 0;
+}
+
+extension type ProductId(int value) {}
+
+String loadUser(UserId id) =&gt; 'تحميل المستخدم ${id.value}';
+
+final userId = UserId(7);
+final productId = ProductId(7);
+print(loadUser(userId));
+// loadUser(productId); ← خطأ ترجمة! رغم أن الاثنين int ✅
+// loadUser(7);         ← خطأ ترجمة أيضاً</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run bin/07_extension_methods.dart</code></div>
+</section>
+
+<!-- ================= 23 CODEGEN: model ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 8">
+  <h2 class="a">توليد الكود: <span class="en">freezed</span> + <span class="en">json_serializable</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>المشكلة:</b> model يدوي يحتاج constructor + fromJson + toJson + copyWith + == + hashCode + toString — ممل وكثير الأخطاء.</li>
+        <li class="a"><b>الحل:</b> نكتب «الوصف» فقط، والأداة تولّد الباقي.</li>
+        <li class="a"><span class="ic">user.freezed.dart</span> ← copyWith و == و hashCode و toString<br><span class="ic">user.g.dart</span> ← fromJson و toJson</li>
+      </ul>
+      <div class="warn a"><b>⚠️</b> لا تعدّل الملفات المولَّدة يدوياً أبداً.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/models/user.dart"><code>part 'user.freezed.dart';
+part 'user.g.dart';
+
+@freezed
+abstract class User with _$User {
+  const factory User({
+    required int id,
+    required String name,
+    required String email,
+    // اسم الحقل في JSON مختلف عن اسمه في Dart
+    @JsonKey(name: 'avatar_url') String? avatarUrl,
+    // قيمة افتراضية إذا لم يأتِ الحقل من الـ API
+    @Default(false) bool isVerified,
+    @Default(&lt;String&gt;[]) List&lt;String&gt; roles,
+  }) = _User;
+
+  // نحتاج هذا السطر ليولّد json_serializable دالة fromJson
+  factory User.fromJson(Map&lt;String, dynamic&gt; json) =&gt;
+      _$UserFromJson(json);
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 24 CODEGEN: usage ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 8">
+  <h2 class="a">استخدام الكود المولَّد: fromJson · toJson · copyWith · ==</h2>
+  <div class="body">
+<pre class="code a" data-file="bin/08_codegen.dart"><code>// 1) fromJson: من استجابة API إلى كائن Dart
+final user = User.fromJson(jsonDecode(apiResponse) as Map&lt;String, dynamic&gt;);
+
+// 2) toJson: من كائن إلى JSON (لإرساله للـ API)
+print('\n2) toJson:\n   ${jsonEncode(user.toJson())}');
+// لاحظ أن avatarUrl رجعت avatar_url بسبب @JsonKey
+
+// 3) copyWith: الكائن immutable، فننشئ نسخة معدّلة
+final verified = user.copyWith(isVerified: true, roles: ['admin']);
+print('   الأصل لم يتغير: isVerified = ${user.isVerified}');
+
+// 4) المساواة بالقيمة: == و hashCode مولّدة
+final same = User.fromJson(jsonDecode(apiResponse) as Map&lt;String, dynamic&gt;);
+print('   user == same ؟ ${user == same}'); // true (بدون freezed = false)</code></pre>
+    <div class="cards two a" style="margin-top:20px">
+      <div class="card"><h3>أمر التوليد (من مجلد المشروع)</h3><p><span class="ic">dart run build_runner build -d</span> ← مرة واحدة (-d = حذف الملفات المتعارضة)</p></div>
+      <div class="card"><h3>أثناء التطوير</h3><p><span class="ic">dart run build_runner watch -d</span> ← يراقب التغييرات ويولّد تلقائياً</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 25 CODEGEN: union ================= -->
+<section class="slide" data-kicker="الجزء A · Dart المتقدم · الدرس 8">
+  <h2 class="a">Union / Sealed مع freezed: حالات تسجيل الدخول</h2>
+  <div class="body">
+    <p class="lead a">يجمع قوة <b>sealed class</b> (الدرس 5) مع التوليد التلقائي — ونستخدم switch الشامل بنفس الطريقة.</p>
+    <div class="stack">
+<pre class="code a sm" data-file="lib/models/user.dart"><code>@freezed
+sealed class AuthState with _$AuthState {
+  const factory AuthState.initial() = AuthInitial;
+  const factory AuthState.loading() = AuthLoading;
+  const factory AuthState.authenticated(User user) = Authenticated;
+  const factory AuthState.error(String message) = AuthError;
+}</code></pre>
+<pre class="code a sm" data-file="bin/08_codegen.dart"><code>final text = switch (state) {
+  AuthInitial() =&gt; 'لم يسجّل الدخول بعد',
+  AuthLoading() =&gt; 'جاري التحقق...',
+  Authenticated(:final user) =&gt; 'أهلاً ${user.name} 👋',
+  AuthError(:final message) =&gt; 'خطأ: $message',
+};</code></pre>
+    </div>
+  </div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run build_runner build -d &amp;&amp; dart run bin/08_codegen.dart</code></div>
+</section>
+
+<!-- ================= 26 DIVIDER B ================= -->
+<section class="slide divider">
+  <div class="kick a">الجزء B</div>
+  <h1 class="a">Riverpod</h1>
+  <div class="sub a">تطبيق Flutter بقائمة دروس في <span class="ic">lib/main.dart</span> — التشغيل: <span class="ic">flutter run</span> (أو <span class="ic">-d chrome</span> / <span class="ic">-d linux</span>).<br>7 دروس: الأساسيات · أنواع الـ Providers · @riverpod · AsyncValue · family و autoDispose · DI · Overrides</div>
+  <div class="chips a" style="margin-top:30px"><span>flutter_riverpod 3.5.0</span><span>riverpod_annotation 4.0.8</span><span>riverpod_generator 4.0.10</span></div>
+</section>
+
+<!-- ================= 27 RIVERPOD: concept (diagram) ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 1">
+  <h2 class="a">الفكرة: الحالة تعيش خارج الـ Widgets داخل «Providers»</h2>
+  <div class="body"><div class="cols diagram wd">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">أي Widget يستطيع قراءة أي Provider بدون تمرير البيانات عبر الـ constructors.</li>
+        <li class="a"><b><bdi dir="ltr">1)</bdi></b> نلف التطبيق بـ <span class="ic">ProviderScope</span> (انظر main.dart) ← هنا تُخزَّن كل الحالات.</li>
+        <li class="a"><b><bdi dir="ltr">2)</bdi></b> نعرّف Provider كمتغير global (آمن، لأنه مجرد «وصفة» وليس القيمة نفسها).</li>
+        <li class="a"><b><bdi dir="ltr">3)</bdi></b> نستخدم <span class="ic">ConsumerWidget</span> بدل StatelessWidget لنحصل على <span class="ic">ref</span>.</li>
+        <li class="a">Provider يعتمد على providers أخرى يُعاد حسابه تلقائياً عند تغيّرها.</li>
+      </ul>
+    </div>
+    <div class="col dia">
+      <div class="diagram rp a" data-loop="7000">
+        <div class="scope"><div class="scope-title">ProviderScope — <code>main.dart</code></div></div>
+        <svg viewBox="0 0 940 780">
+          <defs>
+            <marker id="arr" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="rgba(255,255,255,.65)"/></marker>
+            <marker id="dot" markerWidth="10" markerHeight="10" refX="5" refY="5"><circle cx="5" cy="5" r="4" fill="rgba(255,255,255,.7)"/></marker>
+          </defs>
+          <line x1="740" y1="220" x2="560" y2="300"/>
+          <line x1="300" y1="220" x2="380" y2="300"/>
+          <line x1="470" y1="430" x2="695" y2="570"/>
+          <line x1="245" y1="570" x2="160" y2="220"/>
+          <text x="520" y="262">ref.watch</text>
+          <text x="200" y="262">ref.watch</text>
+          <text x="470" y="520">ref.watch</text>
+          <text x="6" y="505">ref.read(...).add()</text>
+        </svg>
+        <div class="node p1"><b>taxRateProvider</b><small>Provider — قيمة ثابتة</small></div>
+        <div class="node p2 flash" style="--d:1.5s"><b>cartProvider</b><small>NotifierProvider — حالة تتغير</small><span class="flag" style="--d:1.5s">state = [...state, item]</span></div>
+        <div class="node p3 flash" style="--d:2.6s"><b>cartTotalProvider</b><small>Provider مشتق — يُعاد حسابه</small></div>
+        <div class="wnode w1 flash" style="--d:3.7s"><b>ConsumerWidget</b><small>ref.watch(cartTotalProvider)</small><span class="flag" style="--d:3.7s">يُعاد بناؤه</span></div>
+        <div class="wnode w2 flash" style="--d:.3s"><b>onPressed</b><small>ref.read(cartProvider.notifier)<br>.add(item)</small></div>
+        <div class="pulse pu1" style="--d:.7s"></div>
+        <div class="pulse pu2" style="--d:1.8s"></div>
+        <div class="pulse pu3" style="--d:2.9s"></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 28 RIVERPOD BASICS: code ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 1">
+  <h2 class="a">Provider و Notifier: «الوصفة» والحالة القابلة للتغيير</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>Provider</b> بسيط: قيمة للقراءة فقط.</li>
+        <li class="a"><b>Notifier</b>: حالة قابلة للتغيير + الدوال التي تغيّرها. <span class="ic">build()</span> تعيد القيمة الابتدائية.</li>
+        <li class="a">نغيّر الحالة بإسناد قيمة جديدة لـ <span class="ic">state</span> ← كل من يراقب يُعاد بناؤه.</li>
+        <li class="a">بدون ProviderScope في أعلى الشجرة يظهر خطأ عند أول <span class="ic">ref.watch</span>.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/01_basics.dart"><code>// Provider بسيط: قيمة للقراءة فقط
+final greetingProvider =
+    Provider&lt;String&gt;((ref) =&gt; 'أهلاً بك في Riverpod 👋');
+
+// Notifier: حالة قابلة للتغيير + الدوال التي تغيّرها
+class CounterNotifier extends Notifier&lt;int&gt; {
+  // build() تعيد القيمة الابتدائية
+  @override
+  int build() =&gt; 0;
+
+  // نغيّر الحالة بإسناد قيمة جديدة لـ state ← كل من يراقب يُعاد بناؤه
+  void increment() =&gt; state++;
+  void decrement() =&gt; state--;
+  void reset() =&gt; state = 0;
+}
+
+final counterProvider = NotifierProvider&lt;CounterNotifier, int&gt;(
+  CounterNotifier.new,
+);</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 29 watch / read / listen ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 1">
+  <h2 class="a"><span class="en">ref.watch</span> · <span class="en">ref.read</span> · <span class="en">ref.listen</span> — متى أستخدم أيّها؟</h2>
+  <div class="body">
+    <table class="tbl a">
+      <thead><tr><th style="width:170px">الدالة</th><th>ماذا تفعل؟</th><th style="width:400px">أين تُستخدم؟</th><th class="l" style="width:560px">مثال من الدرس</th></tr></thead>
+      <tbody>
+        <tr><td><b>watch</b></td><td>اقرأ القيمة + أعد بناء الـ Widget عند تغيّرها</td><td><span class="ok">✅ داخل build</span> — للعرض</td><td class="mono">final count = ref.watch(counterProvider);</td></tr>
+        <tr><td><b>read</b></td><td>اقرأ مرة واحدة بدون مراقبة — <span class="ic">.notifier</span> يعطينا كائن الـ Notifier لنستدعي دواله</td><td><span class="ok">✅ داخل الأحداث (onPressed)</span><br><span class="no">❌ لا تستخدمه داخل build</span></td><td class="mono">ref.read(counterProvider.notifier).increment()</td></tr>
+        <tr><td><b>listen</b></td><td>نفّذ «تأثيراً جانبياً» عند التغيّر — لا يعيد البناء، فقط يستدعي الدالة</td><td>SnackBar · تنقّل · Dialog</td><td class="mono">ref.listen&lt;int&gt;(counterProvider, (prev, next) {…})</td></tr>
+      </tbody>
+    </table>
+<pre class="code a sm" data-file="lib/riverpod/01_basics.dart" style="margin-top:22px"><code>ref.listen&lt;int&gt;(counterProvider, (previous, next) {
+  if (next == 10) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('🎉 وصلت إلى 10!')),
+    );
+  }
+});</code></pre>
+  </div>
+</section>
+
+<!-- ================= 30 Consumer + select ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 1">
+  <h2 class="a"><span class="en">Consumer</span> و <span class="en">select</span>: إعادة بناء أقل</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul">
+        <li class="a"><b>Consumer:</b> يعيد بناء جزء صغير فقط بدل الشاشة كاملة.</li>
+        <li class="a"><b>select:</b> نراقب جزءاً من القيمة (هنا: زوجي/فردي فقط) فلا يُعاد البناء إلا إذا تغيّر هذا الجزء.</li>
+        <li class="a"><span class="ic">.notifier</span> تعطينا كائن الـ Notifier لنستدعي دواله من داخل الأحداث.</li>
+      </ul>
+      <div class="tip a"><b>💡</b> للـ StatefulWidget نستخدم <span class="ic">ConsumerStatefulWidget</span> و <span class="ic">ConsumerState</span>.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/01_basics.dart"><code>class BasicsScreen extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // ...
+    Consumer(
+      builder: (context, ref, _) {
+        final isEven = ref.watch(
+          counterProvider.select((value) =&gt; value.isEven),
+        );
+        return Chip(label: Text(isEven ? 'زوجي' : 'فردي'));
+      },
+    ),
+    // ...
+    FloatingActionButton(
+      onPressed: () =&gt;
+          ref.read(counterProvider.notifier).increment(),
+      child: const Icon(Icons.add),
+    ),</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>flutter run</code><span class="menu">ثم من القائمة: <bdi dir="ltr">1)</bdi> الأساسيات — جرّب الوصول إلى 10</span></div>
+</section>
+
+<!-- ================= 31 DECISION TABLE ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 2">
+  <h2 class="a">أي نوع Provider أختار؟</h2>
+  <div class="body">
+    <table class="tbl a">
+      <thead><tr><th>الحالة التي أحتاجها</th><th class="l" style="width:420px">النوع</th><th class="l" style="width:560px">مثال من الأمثلة</th></tr></thead>
+      <tbody>
+        <tr><td>قيمة ثابتة أو محسوبة من providers أخرى</td><td class="mono">Provider</td><td class="mono">taxRateProvider · cartTotalProvider</td></tr>
+        <tr><td>حالة متزامنة تتغير (عداد، سلة، فلتر)</td><td class="mono">NotifierProvider</td><td class="mono">counterProvider · cartProvider</td></tr>
+        <tr><td>حالة غير متزامنة تتغير (قائمة من API + إضافة)</td><td class="mono">AsyncNotifierProvider</td><td class="mono">todosProvider</td></tr>
+        <tr><td>قراءة فقط من Future</td><td class="mono">FutureProvider</td><td class="mono">quoteProvider · productProvider(id)</td></tr>
+        <tr><td>قيم مستمرة (شات، موقع، مؤقت)</td><td class="mono">StreamProvider</td><td class="mono">clockProvider</td></tr>
+      </tbody>
+    </table>
+    <div class="cards two a" style="margin-top:24px">
+      <div class="card"><h3>معدِّلات تُضاف لأي نوع</h3><p><span class="ic">.autoDispose</span> حذف الحالة عند عدم الاستخدام · <span class="ic">.family</span> باراميتر لكل حالة مستقلة</p></div>
+      <div class="card"><h3>مع <span class="ic">@riverpod</span></h3><p>تكتب دالة أو class عادية والمولّد يختار النوع المناسب تلقائياً (الدرس 3).</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 32 NOTIFIER CART + DERIVED ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 2">
+  <h2 class="a"><span class="en">NotifierProvider</span> للسلة + <span class="en">Provider</span> مشتق للإجمالي</h2>
+  <div class="body">
+<pre class="code a" data-file="lib/riverpod/02_provider_types.dart"><code>final taxRateProvider = Provider&lt;double&gt;((ref) =&gt; 0.15);
+
+// Provider يعتمد على providers أخرى: يُعاد حسابه تلقائياً عند تغيّرها
+final cartTotalProvider = Provider&lt;double&gt;((ref) {
+  final items = ref.watch(cartProvider);
+  final tax = ref.watch(taxRateProvider);
+  final subtotal = items.fold&lt;double&gt;(0, (sum, item) =&gt; sum + item.price);
+  return subtotal * (1 + tax);
+});
+
+class CartNotifier extends Notifier&lt;List&lt;CartItem&gt;&gt; {
+  @override
+  List&lt;CartItem&gt; build() =&gt; [];
+
+  // ⚠️ الحالة immutable: لا نعدّل القائمة (state.add) بل ننشئ قائمة جديدة
+  void add(CartItem item) =&gt; state = [...state, item];
+  void removeAt(int index) =&gt; state = [...state]..removeAt(index);
+}</code></pre>
+    <div class="warn a" style="margin-top:16px"><b>⚠️ الفخ الأشهر:</b> <span class="ic">state.add(item)</span> يعدّل نفس القائمة فلا يعرف Riverpod أن الحالة تغيّرت — أنشئ قائمة جديدة دائماً.</div>
+  </div>
+</section>
+
+<!-- ================= 33 ASYNC NOTIFIER + STREAM ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 2">
+  <h2 class="a"><span class="en">AsyncNotifierProvider</span> و <span class="en">StreamProvider</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">build</span> هنا async: Riverpod يعرض loading تلقائياً حتى تنتهي.</li>
+        <li class="a"><span class="ic">AsyncValue.guard</span>: ينفّذ ويلتقط الخطأ ويحوّله إلى AsyncError تلقائياً.</li>
+        <li class="a"><b>StreamProvider</b> — ساعة حية: <span class="ic">Stream.periodic(1s)</span> ← Riverpod يلغي الاشتراك تلقائياً عند عدم الحاجة، لا نحتاج cancel يدوياً.</li>
+        <li class="a"><span class="ic">clock.value</span>: آخر قيمة أو null أثناء التحميل.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/02_provider_types.dart"><code>class TodosNotifier extends AsyncNotifier&lt;List&lt;String&gt;&gt; {
+  // build هنا async: Riverpod يعرض loading تلقائياً حتى تنتهي
+  @override
+  Future&lt;List&lt;String&gt;&gt; build() async {
+    await Future.delayed(const Duration(seconds: 1)); // محاكاة طلب شبكة
+    return ['مراجعة Futures', 'تجربة Streams'];
+  }
+
+  Future&lt;void&gt; add(String title) async {
+    final current = state.value ?? [];
+    // AsyncValue.guard: يلتقط الخطأ ويحوّله إلى AsyncError تلقائياً
+    state = await AsyncValue.guard(() async {
+      await Future.delayed(const Duration(milliseconds: 400)); // POST
+      return [...current, title];
+    });
+  }
+}</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>flutter run</code><span class="menu">ثم من القائمة: <bdi dir="ltr">2)</bdi> أنواع الـ Providers</span></div>
+</section>
+
+<!-- ================= 34 @riverpod functions ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 3">
+  <h2 class="a">توليد الكود باستخدام <span class="en">@riverpod</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">بدل أن نكتب النوع بأنفسنا، نكتب دالة أو class عادية ونضع <span class="ic">@riverpod</span> فوقها، والمولّد يختار النوع المناسب ويُنشئ المتغير <span class="ic">xxxProvider</span> تلقائياً.</li>
+        <li class="a">✅ autoDispose افتراضياً (توفير ذاكرة)</li>
+        <li class="a">✅ family عبر باراميترات عادية (حتى المسمّاة والاختيارية)</li>
+        <li class="a">✅ صياغة واحدة لكل الأنواع</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/03_codegen.dart"><code>part '03_codegen.g.dart'; // اسم الملف المولَّد = اسم الملف + .g.dart
+
+// دالة تعيد قيمة ← يولّد Provider باسم appTitleProvider
+@riverpod
+String appTitle(Ref ref) =&gt; 'ورشة Flutter المتقدمة';
+
+// دالة تعيد Future ← يولّد FutureProvider باسم coursesProvider
+@riverpod
+Future&lt;List&lt;String&gt;&gt; courses(Ref ref) async {
+  await Future.delayed(const Duration(seconds: 1));
+  return ['Dart المتقدم', 'Riverpod', 'go_router', 'Dio'];
+}
+
+// دالة بباراميتر ← family تلقائياً: lessonCountProvider('Riverpod')
+@riverpod
+Future&lt;int&gt; lessonCount(Ref ref, String course) async {
+  await Future.delayed(const Duration(milliseconds: 500));
+  return course.length; // رقم وهمي للتوضيح
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 35 @riverpod class + keepAlive ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 3">
+  <h2 class="a"><span class="en">@riverpod class</span> و <span class="en">keepAlive</span></h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">class ← يولّد NotifierProvider؛ نرث من <span class="ic">_$Likes</span> (مولّد) بدل <span class="ic">Notifier&lt;int&gt;</span>.</li>
+        <li class="a"><span class="ic">@Riverpod(keepAlive: true)</span> ← لا يُحذف من الذاكرة حتى لو لم يستخدمه أحد. مناسب للإعدادات وبيانات المستخدم الحالي.</li>
+        <li class="a">الاستخدام مطابق تماماً للـ providers اليدوية: <span class="ic">ref.watch(likesProvider)</span></li>
+      </ul>
+      <div class="tip a"><b>💡 جرّب:</b> اخرج من الشاشة ثم ادخل مجدداً — <span class="ic">likes</span> يرجع 0 (autoDispose) أما الوضع الليلي فيبقى (keepAlive) ويتحكم بثيم التطبيق كله في main.dart.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/03_codegen.dart"><code>// class ← يولّد NotifierProvider باسم likesProvider
+@riverpod
+class Likes extends _$Likes {
+  @override
+  int build() =&gt; 0;
+
+  void like() =&gt; state++;
+}
+
+// keepAlive: true ← لا يُحذف من الذاكرة حتى لو لم يستخدمه أحد
+@Riverpod(keepAlive: true)
+class DarkMode extends _$DarkMode {
+  @override
+  bool build() =&gt; false;
+
+  void toggle() =&gt; state = !state;
+}</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>dart run build_runner watch -d</code><span class="menu">ثم <span class="ic">flutter run</span> ← القائمة: <bdi dir="ltr">3)</bdi> توليد الكود</span></div>
+</section>
+
+<!-- ================= 36 ASYNCVALUE: switch ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 4">
+  <h2 class="a"><span class="en">AsyncValue</span>: loading / data / error بدون متغيرات يدوية</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">أي FutureProvider أو StreamProvider أو AsyncNotifier يعيد <span class="ic">AsyncValue&lt;T&gt;</span> — وهو sealed class (مثل الدرس 5) له 3 حالات:</li>
+      </ul>
+      <div class="mods a" style="margin-bottom:18px">
+        <code>AsyncLoading</code><span>جاري التحميل</span>
+        <code>AsyncData</code><span>وصلت البيانات (<span class="ic">value</span>)</span>
+        <code>AsyncError</code><span>حدث خطأ (<span class="ic">error</span> + <span class="ic">stackTrace</span>)</span>
+      </div>
+      <div class="key a"><b>الفائدة:</b> لا حاجة لمتغيرات isLoading و error يدوياً في كل شاشة. الطريقة 1: switch مع الأنماط (Dart 3) ← المفضّلة حالياً.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/04_async_value.dart"><code>final quoteProvider = FutureProvider&lt;String&gt;(
+  (ref) async {
+    await Future.delayed(const Duration(seconds: 1));
+    if (_random.nextBool()) {
+      throw Exception('فشل الاتصال بالخادم');
+    }
+    return quotes[_random.nextInt(quotes.length)];
+  },
+  // في Riverpod 3 الـ providers تعيد المحاولة تلقائياً عند الخطأ.
+  retry: (retryCount, error) =&gt; null,
+);
+
+final quote = ref.watch(quoteProvider);
+child: switch (quote) {
+  AsyncData(:final value) =&gt; Text('«$value»'),
+  AsyncError(:final error) =&gt; Text('❌ $error'),
+  _ =&gt; const CircularProgressIndicator(),
+},</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 37 ASYNCVALUE: when / refresh ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 4">
+  <h2 class="a"><span class="en">when</span> · <span class="en">refresh</span> · <span class="en">invalidate</span> والخصائص المفيدة</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>الطريقة 2: when</b> ← تجبرك على كتابة الحالات الثلاث.</li>
+        <li class="a"><span class="ic">ref.refresh(provider.future)</span> يعيد التحميل ويعيد Future ينتظره مؤشر السحب للتحديث.</li>
+        <li class="a"><span class="ic">ref.invalidate(provider)</span>: أعد التحميل في المرة القادمة التي يُقرأ فيها.</li>
+        <li class="a">خصائص: <span class="ic">isLoading</span> · <span class="ic">hasValue</span> · <span class="ic">hasError</span> · <span class="ic">isRefreshing</span> (جاري التحديث مع وجود بيانات قديمة — لا نخفيها).</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/04_async_value.dart"><code>RefreshIndicator(
+  onRefresh: () =&gt; ref.refresh(quoteProvider.future),
+  // ...
+)
+// الطريقة 2: when ← تجبرك على كتابة الحالات الثلاث
+quote.when(
+  data: (value) =&gt;
+      const ListTile(title: Text('تم التحميل بنجاح')),
+  error: (error, stackTrace) =&gt; ListTile(
+    title: const Text('حدث خطأ'),
+    trailing: TextButton(
+      // invalidate: أعد التحميل عند القراءة القادمة
+      onPressed: () =&gt; ref.invalidate(quoteProvider),
+      child: const Text('إعادة المحاولة'),
+    ),
+  ),
+  loading: () =&gt; const ListTile(title: Text('جاري التحميل...')),
+)</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>flutter run</code><span class="menu">ثم من القائمة: <bdi dir="ltr">4) AsyncValue</bdi> — اسحب للأسفل (نجاح أو فشل عشوائي)</span></div>
+</section>
+
+<!-- ================= 38 FAMILY + AUTODISPOSE: code ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 5">
+  <h2 class="a"><span class="en">family</span> و <span class="en">autoDispose</span>: باراميتر لكل حالة + تنظيف تلقائي</h2>
+  <div class="body">
+<pre class="code a" data-file="lib/riverpod/05_family_autodispose.dart"><code>// FutureProvider.autoDispose.family&lt;النوع, الباراميتر&gt;
+final productProvider = FutureProvider.autoDispose.family&lt;Product, int&gt;(
+  (ref, id) async {
+    debugPrint('🟢 إنشاء productProvider($id)');
+    // onDispose: تنظيف (إلغاء طلبات، إغلاق streams...)
+    ref.onDispose(() =&gt; debugPrint('🔴 حذف productProvider($id)'));
+
+    await Future.delayed(const Duration(milliseconds: 800)); // GET /products/$id
+
+    // keepAlive: نمنع الحذف مؤقتاً = كاش لمدة 10 ثوانٍ
+    final link = ref.keepAlive();
+    final timer = Timer(const Duration(seconds: 10), link.close);
+    ref.onDispose(timer.cancel);
+
+    return (id: id, name: 'منتج رقم $id', price: id * 25.0);
+  },
+);
+
+// نمرّر الباراميتر كأننا نستدعي دالة
+final product = ref.watch(productProvider(id));</code></pre>
+  </div>
+</section>
+
+<!-- ================= 39 AUTODISPOSE (diagram) ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 5">
+  <h2 class="a">ماذا يحدث للحالة عند الخروج من الشاشة؟</h2>
+  <div class="body"><div class="cols diagram wd">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>family</b> ← كل قيمة باراميتر لها حالة مستقلة ومخزّنة منفصلة: <span class="ic">productProvider(3) ≠ productProvider(4)</span></li>
+        <li class="a"><b>autoDispose</b> ← حذف الحالة من الذاكرة عندما لا يستخدمها أي Widget (مثلاً عند الخروج من شاشة التفاصيل).</li>
+        <li class="a"><b>keepAlive</b> ← إذا رجع المستخدم خلال 10 ثوانٍ تظهر البيانات فوراً بدون تحميل.</li>
+        <li class="a">Notifier مع family: الباراميتر يصل عبر الـ constructor (أسلوب Riverpod 3) — <span class="ic">NotifierProvider.autoDispose.family</span></li>
+      </ul>
+      <div class="tip a"><b>💡</b> افتح Debug Console وراقب رسائل «إنشاء» و «حذف».</div>
+    </div>
+    <div class="col dia">
+      <div class="diagram ad a" data-loop="9000">
+        <div class="screens">
+          <div class="scr s1"><div class="bar">FamilyScreen</div><ul><li>منتج رقم 1</li><li>منتج رقم 2</li><li class="hi">منتج رقم 3 ‹</li></ul></div>
+          <div class="nav"><span class="push">push ↓</span><span class="pop">pop ↑</span></div>
+          <div class="scr s2"><div class="bar">ProductDetails(id: 3)</div><div class="bd">منتج رقم 3<br>75 ر.س · الكمية 1</div></div>
+        </div>
+        <div class="store">
+          <div class="stt">ProviderScope — الحالة المخزّنة</div>
+          <div class="pv pv1"><b>productProvider(3)</b><span class="s create c1">🟢 إنشاء</span><span class="s keep k1">⏱ keepAlive — كاش 10 ثوانٍ</span><span class="s drop d1">🔴 حذف بعد انتهاء المؤقت</span></div>
+          <div class="pv pv2"><b>quantityProvider(3)</b><span class="s create c1">🟢 إنشاء (الكمية = 1)</span><span class="s drop d2">🔴 حذف فور الرجوع</span></div>
+          <div class="log">🟢 إنشاء productProvider(3)<br>🔴 حذف الكمية للمنتج 3<br>🔴 حذف productProvider(3)</div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>flutter run</code><span class="menu">ثم من القائمة: <bdi dir="ltr">5) family</bdi> و autoDispose — ادخل منتجاً ثم ارجع</span></div>
+</section>
+
+<!-- ================= 40 DI ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 6">
+  <h2 class="a">حقن الاعتماديات (DI) — بدون get_it وبدون singletons</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <p class="note a" style="margin:0 0 14px;font-size:27px"><b style="color:var(--rose)">المشكلة:</b> لو كتبنا داخل الشاشة <span class="ic">final repo = ApiWeatherRepository();</span> صارت الشاشة مرتبطة بتنفيذ محدد ← صعب الاختبار وصعب التبديل.</p>
+      <div class="layers a">
+        <div class="ly"><span><bdi dir="ltr">1)</bdi> الإعدادات</span><code>apiConfigProvider</code></div>
+        <div class="arrow">↓ ref.watch</div>
+        <div class="ly"><span><bdi dir="ltr">2)</bdi> الواجهة + التنفيذ</span><code>weatherRepositoryProvider</code></div>
+        <div class="arrow">↓ ref.watch</div>
+        <div class="ly"><span><bdi dir="ltr">3)</bdi> المنطق</span><code>temperatureProvider(city)</code></div>
+        <div class="arrow">↓ ref.watch</div>
+        <div class="ly"><span><bdi dir="ltr">4)</bdi> الشاشة — لا تعرف شيئاً عن API أو Dio</span><code>CityTemperatureTile</code></div>
+      </div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/06_dependency_injection.dart"><code>// 1) نعرّف واجهة (abstract interface)
+abstract interface class WeatherRepository {
+  Future&lt;int&gt; temperature(String city);
+}
+
+// 2) نوفّر التنفيذ عبر Provider — يقرأ الإعدادات من provider آخر
+// (الاعتمادية تصل عبر الـ constructor: Constructor Injection)
+final weatherRepositoryProvider = Provider&lt;WeatherRepository&gt;(
+  (ref) =&gt; ApiWeatherRepository(ref.watch(apiConfigProvider)),
+);
+
+// 3) المنطق يعتمد على الواجهة فقط وليس التنفيذ
+final temperatureProvider = FutureProvider.family&lt;int, String&gt;(
+  (ref, city) =&gt;
+      ref.watch(weatherRepositoryProvider).temperature(city),
+);</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>flutter run</code><span class="menu">ثم من القائمة: <bdi dir="ltr">6)</bdi> حقن الاعتماديات</span></div>
+</section>
+
+<!-- ================= 41 OVERRIDES ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 7">
+  <h2 class="a">Overrides: «استبدل هذا الـ provider داخل هذا النطاق»</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b><bdi dir="ltr">1)</bdi> الاختبارات:</b> نستبدل الـ Repository الحقيقي بـ Fake.</li>
+        <li class="a"><b><bdi dir="ltr">2)</bdi> البيئات:</b> تنفيذ مختلف للتطوير والإنتاج (انظر تعليق main.dart).</li>
+        <li class="a"><b><bdi dir="ltr">3)</bdi> النطاق المحلي:</b> ProviderScope متداخل يعطي قيمة مختلفة لجزء من الشجرة.</li>
+      </ul>
+      <div class="mods a" style="margin-top:8px">
+        <code>overrideWithValue(v)</code><span>قيمة جاهزة</span>
+        <code>overrideWith((ref) =&gt; …)</code><span>دالة إنشاء جديدة</span>
+      </div>
+      <div class="key a"><b>📌 لماذا override لـ temperatureProvider أيضاً؟</b> لأنه يقرأ الـ Repository، فيُنشأ من جديد داخل هذا النطاق ويرى الـ Fake.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/riverpod/07_overrides.dart"><code>// تنفيذ وهمي (Fake) — نفس الواجهة، نتيجة ثابتة وفورية
+class FakeWeatherRepository implements WeatherRepository {
+  @override
+  Future&lt;int&gt; temperature(String city) async =&gt; 99;
+}
+
+// ProviderScope متداخل: نستبدل الـ Repository لهذا الجزء فقط
+ProviderScope(
+  overrides: [
+    weatherRepositoryProvider.overrideWithValue(
+      FakeWeatherRepository(),
+    ),
+    temperatureProvider.overrideWith(
+      (ref, city) =&gt;
+          ref.watch(weatherRepositoryProvider).temperature(city),
+    ),
+  ],
+  child: const CityTemperatureTile(city: 'الرياض'),
+),</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 42 OVERRIDES: per item + test ================= -->
+<section class="slide" data-kicker="الجزء B · Riverpod · الدرس 7">
+  <h2 class="a">override لكل عنصر في القائمة + override في الاختبارات</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>Provider «بدون قيمة»:</b> <span class="ic">throw UnimplementedError(...)</span> — يجب أن يُعطى قيمة عبر override وإلا يرمي خطأ.</li>
+        <li class="a">داخل القائمة: لكل عنصر <span class="ic">ProviderScope</span> خاص مع <span class="ic">overrideWithValue(city)</span> — لاحظ: لا نمرّر city للـ constructor.</li>
+        <li class="a"><b>في الاختبار:</b> <span class="ic">ProviderContainer</span> = نفس ProviderScope لكن بدون Widgets، و <span class="ic">.test</span> يتخلّص من الحاوية تلقائياً بعد انتهاء الاختبار.</li>
+        <li class="a"><span class="ic">.future</span> ننتظر النتيجة النهائية للـ FutureProvider.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="test/overrides_test.dart"><code>test('temperatureProvider يستخدم الـ Repository الوهمي', () async {
+  // ProviderContainer = نفس ProviderScope لكن بدون Widgets
+  final container = ProviderContainer.test(
+    overrides: [
+      weatherRepositoryProvider.overrideWithValue(
+        FakeWeatherRepository(),
+      ),
+    ],
+  );
+
+  // .future ننتظر النتيجة النهائية للـ FutureProvider
+  final temp =
+      await container.read(temperatureProvider('الرياض').future);
+
+  expect(temp, 99); // النتيجة من الـ Fake وليس من الـ API ✅
+});</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">شغّل المثال</span><code>flutter test test/overrides_test.dart</code><span class="menu">ثم <span class="ic">flutter run</span> ← القائمة: <bdi dir="ltr">7) Overrides</bdi></span></div>
+</section>
+
+<!-- ================= 43 RECAP ================= -->
+<section class="slide" data-kicker="خلاصة اليوم">
+  <h2 class="a">ملخص اليوم الأول</h2>
+  <div class="body"><div class="recap">
+    <div class="part a">
+      <h3>A · Dart المتقدم</h3>
+      <ul>
+        <li class="a"><b>Future</b>: وعد بقيمة لاحقاً — await للقراءة، <span class="ic">Future.wait</span> / <span class="ic">(a, b).wait</span> للتوازي، لا تنسَ await.</li>
+        <li class="a"><b>Event loop</b>: متزامن ← microtasks ← events.</li>
+        <li class="a"><b>Stream</b>: قيم مع الوقت — broadcast لعدة مستمعين، عالج الأخطاء، ألغِ الاشتراك في dispose.</li>
+        <li class="a"><b>Isolate</b>: ذاكرة مستقلة ورسائل — <span class="ic">Isolate.run</span> يحمي الـ UI ولا يسرّع الحساب.</li>
+        <li class="a"><b>Records</b>: قيم مجمّعة + تفكيك — للبيانات المؤقتة الصغيرة.</li>
+        <li class="a"><b>sealed + patterns</b>: switch شامل يفحصه المترجم.</li>
+        <li class="a"><b>Generics</b>: Repository&lt;T extends Entity&gt; بدل dynamic.</li>
+        <li class="a"><b>Extensions</b>: دوال على أنواع موجودة، و extension type بلا تكلفة.</li>
+        <li class="a"><b>freezed</b>: نكتب الوصف، والمولّد يكتب الباقي.</li>
+      </ul>
+    </div>
+    <div class="part a">
+      <h3>B · Riverpod</h3>
+      <ul>
+        <li class="a"><b>ProviderScope</b> في الأعلى، Providers كمتغيرات global، <span class="ic">ConsumerWidget</span> للحصول على ref.</li>
+        <li class="a"><b>watch</b> داخل build · <b>read</b> في الأحداث · <b>listen</b> للتأثيرات الجانبية.</li>
+        <li class="a"><b>أنواع</b>: Provider · NotifierProvider · AsyncNotifierProvider · FutureProvider · StreamProvider.</li>
+        <li class="a"><b>@riverpod</b>: صياغة واحدة، autoDispose افتراضياً، family بباراميترات.</li>
+        <li class="a"><b>AsyncValue</b>: switch أو when — بدون isLoading يدوي.</li>
+        <li class="a"><b>family / autoDispose / keepAlive</b>: حالة لكل باراميتر وتنظيف تلقائي مع كاش اختياري.</li>
+        <li class="a"><b>DI</b>: واجهة + Provider + ref.watch — Riverpod هو حاوية الاعتماديات.</li>
+        <li class="a"><b>Overrides</b>: Fake في الاختبارات، نطاق متداخل، <span class="ic">ProviderContainer.test</span>.</li>
+      </ul>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 44 EXERCISES ================= -->
+<section class="slide" data-kicker="تمارين عملية">
+  <h2 class="a">تمارين — عدّل الأمثلة بنفسك</h2>
+  <div class="body">
+    <ol class="ex">
+      <li class="a"><b>Futures:</b> في <span class="ic">bin/01</span> أضف دالة <span class="ic">fetchProfile()</span> تعيد Record <span class="ic">(name, orders)</span> باستخدام <span class="ic">(…).wait</span>، ثم أضف لها <span class="ic">timeout</span> واطبع رسالة عند انتهاء المهلة.</li>
+      <li class="a"><b>Streams:</b> في <span class="ic">bin/02</span> أضف مستمعاً ثالثاً لـ <span class="ic">ChatService</span> يحسب الرسائل التي تحتوي كلمة «مرحباً» — عالج الأخطاء وألغِ الاشتراك قبل <span class="ic">dispose()</span>.</li>
+      <li class="a"><b>Sealed:</b> في <span class="ic">bin/05</span> أضف حالة <span class="ic">Cancelled&lt;T&gt;</span> إلى <span class="ic">Result&lt;T&gt;</span>، شاهد خطأ الترجمة في <span class="ic">render</span>، ثم عالجها.</li>
+      <li class="a"><b>Riverpod:</b> في <span class="ic">lib/riverpod/02</span> أضف <span class="ic">clear()</span> لـ <span class="ic">CartNotifier</span>، واعرض عدد العناصر في AppBar عبر <span class="ic">select((cart) =&gt; cart.length)</span>.</li>
+      <li class="a wide"><b>Overrides + اختبار:</b> في <span class="ic">test/overrides_test.dart</span> اكتب اختباراً ثانياً يستبدل <span class="ic">apiConfigProvider</span> بإعدادات أخرى بدون Fake، ويتأكد أن <span class="ic">temperatureProvider('جدة')</span> تعيد <span class="ic">20 + 'جدة'.length</span>.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= 45 CLOSING / DAY 2 ================= -->
+<section class="slide" data-kicker="نهاية اليوم الأول">
+  <h2 class="a">غداً — اليوم الثاني</h2>
+  <div class="body">
+    <div class="next">
+      <div class="card a"><h3>التنقّل مع <span class="ic">go_router</span></h3><ul>
+        <li>تعريف المسارات والباراميترات (<span class="ic">/products/:id</span>)</li>
+        <li>التنقّل المتداخل و ShellRoute (شريط سفلي)</li>
+        <li>الحماية (redirect) اعتماداً على AuthState من اليوم الأول</li>
+        <li>Deep links وتمرير البيانات</li>
+      </ul></div>
+      <div class="card a"><h3>الشبكة مع <span class="ic">Dio</span></h3><ul>
+        <li>إعداد Dio عبر Provider (نفس نمط DI اليوم)</li>
+        <li>Interceptors: التوكن، التسجيل، إعادة المحاولة</li>
+        <li>معالجة الأخطاء بـ <span class="ic">Result&lt;T&gt;</span> و <span class="ic">AsyncValue</span></li>
+        <li>النماذج بـ freezed من استجابات حقيقية</li>
+      </ul></div>
+    </div>
+    <div class="key a" style="margin-top:28px;font-size:32px"><b>قبل الغد:</b> شغّل الأمثلة الثمانية في <span class="ic">bin/</span> والدروس السبعة في التطبيق، وحاول تمريناً واحداً على الأقل. — أسئلة؟</div>
+  </div>
+</section>
+
+</div><!-- /stage -->
+
+<div id="counter">1 / 45</div>
+<div id="nav"><button id="prevBtn" title="السابق">›</button><button id="ovBtn" title="نظرة عامة (O)">⊞</button><button id="nextBtn" title="التالي">‹</button></div>
+<div id="overview"><div class="grid"></div></div>
+<pre id="audit"></pre>
+
+<script>
+(function(){
+  'use strict';
+  var errs=[];
+  window.addEventListener('error',function(e){errs.push(String(e.message||e));});
+
+  var stage=document.getElementById('stage');
+  var slides=Array.prototype.slice.call(stage.querySelectorAll('.slide'));
+  var n=slides.length, cur=-1, loopTimer=null, leaveTimer=null;
+  var params=location.search;
+  var isStatic=/[?&](static|check)\b/.test(params)||matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(isStatic) document.documentElement.classList.add('static');
+
+  /* ---------- stagger indices ---------- */
+  slides.forEach(function(s){
+    var i=0;
+    s.querySelectorAll('.a').forEach(function(el){
+      el.style.setProperty('--i',i);
+      if(el.tagName==='PRE') el.style.setProperty('--pi',i);
+      i++;
+    });
+  });
+
+  /* ---------- tiny Dart highlighter ---------- */
+  var KW={};'abstract as async await base break case catch class const continue covariant default do dynamic else enum export extends extension external factory false final finally for get hide if implements import in interface is late library mixin new null on operator part required rethrow return sealed set show static super switch sync this throw true try typedef var void when while with yield'.split(' ').forEach(function(k){KW[k]=1;});
+  var TY={};'int double num bool String List Map Set Future Stream Object Never Iterable Duration DateTime Timer Completer Stopwatch Isolate SendPort ReceivePort Ref WidgetRef BuildContext Widget'.split(' ').forEach(function(k){TY[k]=1;});
+  var AR=/[؀-ۿ]/;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function tokLine(line){
+    var out='',m;
+    var re=/(\/\/.*)|(r?'(?:[^'\\]|\\.)*'|r?"(?:[^"\\]|\\.)*")|(@[A-Za-z_]\w*)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)|(\s+)|([\s\S])/g;
+    while((m=re.exec(line))){
+      if(m[1]){
+        var mm=/^(\/\/+)([\s\S]*)$/.exec(m[1]);
+        out+='<span class="cm">'+esc(mm[1])+'</span><span class="cm" dir="'+(AR.test(mm[2])?'rtl':'ltr')+'">'+esc(mm[2])+'</span>';
+      }else if(m[2]){
+        var s=esc(m[2]);
+        if(m[2].charAt(0)!=='r') s=s.replace(/\$\{[^}]*\}|\$\w+/g,function(x){return '<span class="ip">'+x+'</span>';});
+        out+='<span class="st"'+(AR.test(m[2])?' dir="rtl"':'')+'>'+s+'</span>';
+      }else if(m[3]){ out+='<span class="an">'+esc(m[3])+'</span>'; }
+      else if(m[4]){ out+='<span class="nu">'+m[4]+'</span>'; }
+      else if(m[5]){
+        var w=m[5], rest=line.slice(re.lastIndex), isCall=/^\s*\(/.test(rest)&&!/^\s*\(\s*\)\s*(=>|\{)/.test(rest)&&!KW[w];
+        if(KW[w]) out+='<span class="kw">'+w+'</span>';
+        else if(TY[w]||/^_?\$?[A-Z]/.test(w)) out+='<span class="ty">'+w+'</span>';
+        else if(isCall) out+='<span class="fn">'+esc(w)+'</span>';
+        else out+=esc(w);
+      }else out+=esc(m[0]);
+    }
+    return out;
+  }
+  stage.querySelectorAll('pre.code code').forEach(function(code){
+    var lines=code.textContent.replace(/\s+$/,'').split('\n');
+    code.innerHTML=lines.map(function(l,i){return '<span class="ln" style="--i:'+i+'">'+(tokLine(l)||' ')+'</span>';}).join('');
+  });
+
+  /* ---------- auto-fit code font so the widest line fits its block (min 22px) ---------- */
+  function fitCode(){
+    stage.querySelectorAll('pre.code').forEach(function(pre){
+      var code=pre.querySelector('code'); if(!code) return;
+      pre.style.fontSize='';
+      var fs=parseFloat(getComputedStyle(pre).fontSize), guard=0;
+      while(code.scrollWidth>code.clientWidth+1 && fs>22 && guard++<8){ fs-=1; pre.style.fontSize=fs+'px'; }
+    });
+  }
+  fitCode();
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitCode);
+
+  /* ---------- fit 16:9 stage ---------- */
+  function fit(){
+    var s=Math.min(innerWidth/1920,innerHeight/1080);
+    stage.style.transform='scale('+s+')';
+    stage.style.left=((innerWidth-1920*s)/2)+'px';
+    stage.style.top=((innerHeight-1080*s)/2)+'px';
+  }
+  addEventListener('resize',fit); fit();
+
+  /* ---------- diagrams loop ---------- */
+  function startLoop(slide){
+    stopLoop();
+    if(isStatic) return;
+    var d=slide.querySelector('.diagram[data-loop]'); if(!d) return;
+    var play=function(){ d.classList.remove('play'); void d.offsetWidth; d.classList.add('play'); };
+    play();
+    loopTimer=setInterval(play,parseInt(d.getAttribute('data-loop'),10)||8000);
+    loopTimer._d=d;
+  }
+  function stopLoop(){
+    if(loopTimer){ clearInterval(loopTimer); if(loopTimer._d) loopTimer._d.classList.remove('play'); loopTimer=null; }
+  }
+
+  /* ---------- navigation ---------- */
+  var progress=document.getElementById('progress'), counter=document.getElementById('counter');
+  function go(i,dir){
+    i=Math.max(0,Math.min(n-1,i));
+    if(i===cur) return;
+    if(dir===undefined) dir=i>cur?1:-1;
+    stage.classList.toggle('back',dir<0);
+    if(cur>=0){
+      var old=slides[cur];
+      old.classList.remove('active'); old.classList.add('leaving');
+      clearTimeout(leaveTimer);
+      leaveTimer=setTimeout(function(){ old.classList.remove('leaving'); },650);
+      slides.forEach(function(s){ if(s!==old) s.classList.remove('leaving'); });
+    }
+    cur=i;
+    slides[cur].classList.add('active');
+    progress.style.width=((cur+1)/n*100)+'%';
+    counter.textContent=(cur+1)+' / '+n;
+    if(('#'+(cur+1))!==location.hash) history.replaceState(null,'','#'+(cur+1));
+    startLoop(slides[cur]);
+  }
+  function next(){ go(cur+1,1); } function prev(){ go(cur-1,-1); }
+  function fromHash(){ var h=parseInt((location.hash||'').replace('#',''),10); return isNaN(h)?0:h-1; }
+  addEventListener('hashchange',function(){ var i=fromHash(); if(i!==cur) go(i); });
+
+  /* ---------- overview ---------- */
+  var ov=document.getElementById('overview'), grid=ov.querySelector('.grid');
+  function openOverview(){
+    grid.innerHTML='';
+    var cols=5, w=(ov.clientWidth-56-(cols-1)*18)/cols, sc=w/1920;
+    slides.forEach(function(s,i){
+      var t=document.createElement('div'); t.className='thumb'+(i===cur?' cur':'');
+      var c=s.cloneNode(true); c.classList.add('active'); c.classList.remove('leaving'); c.style.transform='scale('+sc+')';
+      c.querySelectorAll('.diagram').forEach(function(d){ d.classList.remove('play'); });
+      t.appendChild(c);
+      var num=document.createElement('span'); num.className='num'; num.textContent=i+1; t.appendChild(num);
+      t.addEventListener('click',function(ev){ ev.stopPropagation(); closeOverview(); go(i); });
+      grid.appendChild(t);
+    });
+    ov.classList.add('open');
+    var curT=grid.querySelector('.thumb.cur'); if(curT) curT.scrollIntoView({block:'center'});
+  }
+  function closeOverview(){ ov.classList.remove('open'); grid.innerHTML=''; }
+  function toggleOverview(){ ov.classList.contains('open')?closeOverview():openOverview(); }
+
+  /* ---------- fullscreen ---------- */
+  function toggleFull(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  }
+
+  /* ---------- input ---------- */
+  addEventListener('keydown',function(e){
+    if(e.altKey||e.ctrlKey||e.metaKey) return;
+    var k=e.key;
+    if(ov.classList.contains('open')&&(k==='Escape'||k==='o'||k==='O')){ closeOverview(); e.preventDefault(); return; }
+    switch(k){
+      case 'ArrowRight': case 'PageDown': case ' ': case 'Enter': if(e.shiftKey&&k===' '){prev();}else{next();} e.preventDefault(); break;
+      case 'ArrowLeft': case 'PageUp': case 'Backspace': prev(); e.preventDefault(); break;
+      case 'ArrowDown': next(); e.preventDefault(); break;
+      case 'ArrowUp': prev(); e.preventDefault(); break;
+      case 'Home': go(0,-1); e.preventDefault(); break;
+      case 'End': go(n-1,1); e.preventDefault(); break;
+      case 'f': case 'F': toggleFull(); break;
+      case 'o': case 'O': toggleOverview(); e.preventDefault(); break;
+    }
+  });
+  stage.addEventListener('click',function(e){
+    if(e.target.closest('a,button')) return;
+    if(window.getSelection&&String(window.getSelection())) return;
+    next();
+  });
+  document.getElementById('prevBtn').addEventListener('click',function(e){e.stopPropagation();prev();});
+  document.getElementById('nextBtn').addEventListener('click',function(e){e.stopPropagation();next();});
+  document.getElementById('ovBtn').addEventListener('click',function(e){e.stopPropagation();toggleOverview();});
+  var tx=null,ty=null;
+  addEventListener('touchstart',function(e){ var t=e.changedTouches[0]; tx=t.clientX; ty=t.clientY; },{passive:true});
+  addEventListener('touchend',function(e){
+    if(tx===null) return; var t=e.changedTouches[0], dx=t.clientX-tx, dy=t.clientY-ty; tx=null;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){ if(dx<0) next(); else prev(); }
+  },{passive:true});
+
+  go(fromHash(),1);
+
+  /* ---------- presenter chrome auto-hide (2s idle) ---------- */
+  var idleT=null;
+  function wake(){ document.body.classList.remove('idle'); clearTimeout(idleT); idleT=setTimeout(function(){ document.body.classList.add('idle'); },2000); }
+  addEventListener('mousemove',wake,{passive:true});
+  addEventListener('touchstart',wake,{passive:true});
+  wake();
+
+  /* ---------- self-check (?check): layout overflow + JS errors ---------- */
+  if(/[?&]check\b/.test(params)){
+    var report={slides:n,errors:errs,overflow:[],tight:[],pulses:[],fonts:[],colOverflow:[],boxOverflow:[]};
+    function desc(el){ return el.tagName.toLowerCase()+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).join('.'):''); }
+    function run(){
+      fitCode();
+      slides.forEach(function(s,idx){
+        /* content wider/taller than its own box (clipped or spilling text), for every non-inline element */
+        s.querySelectorAll('*').forEach(function(el){
+          if(el.closest('svg')||el===s||el.classList.contains('pipe')||el.classList.contains('line')) return;
+          var cs=getComputedStyle(el); if(cs.display==='inline'||cs.display==='none'||cs.display==='contents') return;
+          var dx=el.scrollWidth-el.clientWidth, dy=el.scrollHeight-el.clientHeight;
+          if(dx>1||dy>1) report.boxOverflow.push({slide:idx+1,el:desc(el),dx:dx,dy:dy,text:(el.textContent||'').trim().slice(0,30)});
+        });
+        s.querySelectorAll('pre.code').forEach(function(p){ var f=parseFloat(getComputedStyle(p).fontSize); if(f<27) report.fonts.push({slide:idx+1,fs:f}); });
+        s.querySelectorAll('.ic, .run code').forEach(function(ic){
+          var col=ic.closest('.col, .card, .ex li, .recap li, .run, .sub'); if(!col) return;
+          var a=ic.getBoundingClientRect(), b=col.getBoundingClientRect();
+          if(a.left<b.left-1||a.right>b.right+1) report.colOverflow.push({slide:idx+1,text:ic.textContent.slice(0,40),by:Math.round(Math.max(b.left-a.left,a.right-b.right))});
+        });
+        slides.forEach(function(o){ o.classList.remove('active','leaving'); });
+        s.classList.add('active');
+        var r=s.getBoundingClientRect();
+        s.querySelectorAll('*').forEach(function(el){
+          if(el.closest('svg')&&el.tagName!=='svg') return;
+          var b=el.getBoundingClientRect(); if(b.width<2||b.height<2) return;
+          var tag=el.tagName.toLowerCase()+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).join('.'):'');
+          if(b.right>r.right+1||b.left<r.left-1||b.bottom>r.bottom+1||b.top<r.top-1)
+            report.overflow.push({slide:idx+1,el:tag,dx:Math.round(Math.max(b.right-r.right,r.left-b.left)),dy:Math.round(Math.max(b.bottom-r.bottom,r.top-b.top))});
+          else if(b.bottom>r.bottom-40 && !el.closest('.run') && el.tagName!=='SECTION')
+            report.tight.push({slide:idx+1,el:tag,gap:Math.round(r.bottom-b.bottom)});
+        });
+        s.querySelectorAll('pre.code code').forEach(function(c){
+          if(c.scrollWidth>c.clientWidth+1) report.overflow.push({slide:idx+1,el:'code-h',dx:c.scrollWidth-c.clientWidth});
+        });
+        s.querySelectorAll('.rp .pulse').forEach(function(p){
+          p.style.offsetDistance='100%'; p.style.opacity='1';
+          var b=p.getBoundingClientRect(), d=p.parentNode.getBoundingClientRect();
+          report.pulses.push({slide:idx+1,cls:p.className,x:Math.round((b.left+b.width/2-d.left)/(d.width/940)),y:Math.round((b.top+b.height/2-d.top)/(d.height/780))});
+          p.style.offsetDistance=''; p.style.opacity='';
+        });
+      });
+      slides.forEach(function(o){ o.classList.remove('active'); });
+      slides[cur].classList.add('active');
+      // dedupe tight by slide
+      var seen={}; report.tight=report.tight.filter(function(t){ var k=t.slide+t.el; if(seen[k]) return false; seen[k]=1; return true; });
+      document.getElementById('audit').textContent=JSON.stringify(report);
+      document.title='AUDIT_DONE';
+    }
+    if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(run,100); }); else setTimeout(run,500);
+  }
+})();
+</script>
+</body>
+</html>

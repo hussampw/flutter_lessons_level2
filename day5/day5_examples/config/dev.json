@@ -1,0 +1,5 @@
+{
+  "API_BASE_URL": "https://dummyjson.com",
+  "API_KEY": "dev-public-key-123",
+  "ENABLE_LOGS": "true"
+}

@@ -1,0 +1,1754 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورشة Flutter المتقدمة — اليوم الثالث</title>
+<meta name="description" content="عرض اليوم الثالث: التخزين المحلي وقواعد البيانات (Drift) + المعمارية + درسا Dart قصيران (Generics و Streams) — يطابق أمثلة day3_examples/lib/lessons">
+<link href="../assets/fonts/fonts.css" rel="stylesheet"><!-- خطوط محلية: يعمل العرض بدون إنترنت -->
+<style>
+/* ============================================================
+   Identity: Dart/Flutter navy + sky, amber for "run" cues
+   ============================================================ */
+:root{
+  --bg:#061A2E; --bg2:#0B2A47; --card:#0E3156; --code:#04111F;
+  --ink:#F3F7FB; --muted:#9FB3C8; --sky:#54C5F8; --blue:#13B9FD; --deep:#0175C2;
+  --amber:#FFC108; --teal:#2EE6A6; --rose:#FF6B81;
+  --sans:'Tajawal',system-ui,sans-serif; --mono:'JetBrains Mono','Fira Code',monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+code{font-family:var(--mono)}
+
+/* ---------- stage (16:9, scaled to fit) ---------- */
+#stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:var(--bg);
+  --enter:-80px;--leave:80px}
+#stage.back{--enter:80px;--leave:-80px}
+#stage::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1.2px,transparent 1.2px);background-size:40px 40px;pointer-events:none}
+.bgshape{position:absolute;pointer-events:none}
+.bg1{left:-160px;bottom:-140px;width:680px;height:680px;background:linear-gradient(135deg,rgba(84,197,248,.18),rgba(1,117,194,.04));clip-path:polygon(0 100%,100% 0,100% 42%,42% 100%)}
+.bg2{left:150px;bottom:-230px;width:460px;height:460px;background:rgba(19,185,253,.10);clip-path:polygon(0 100%,100% 0,100% 46%,46% 100%)}
+.bg3{right:-120px;top:-160px;width:420px;height:420px;background:radial-gradient(circle at 50% 50%,rgba(84,197,248,.16),transparent 65%)}
+
+/* ---------- slides & transitions (RTL: next enters from the left) ---------- */
+.slide{position:absolute;inset:0;padding:90px 88px 64px;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transform:translateX(var(--enter));pointer-events:none;
+  transition:opacity .55s var(--ease),transform .55s var(--ease),visibility 0s linear .55s}
+.slide.active{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition-delay:0s}
+.slide.leaving{transform:translateX(var(--leave))}
+.slide::before{content:attr(data-kicker);position:absolute;top:34px;right:88px;font-size:24px;font-weight:700;color:var(--sky);letter-spacing:.2px}
+.slide::after{content:'ورشة Flutter المتقدمة · اليوم الثالث';position:absolute;bottom:26px;right:88px;font-size:22px;font-weight:500;color:#C9D6E3}
+
+/* ---------- staggered entrance ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.slide.active .a{animation:rise .7s var(--ease) both;animation-delay:calc(var(--i,0)*90ms + 120ms)}
+.slide.active .ln{animation:rise .45s var(--ease) both;animation-delay:calc(var(--pi,0)*90ms + var(--i,0)*38ms + 260ms)}
+
+/* ---------- typography ---------- */
+h1,h2,h3{margin:0;font-weight:800;line-height:1.2}
+h2{font-size:60px;margin-bottom:24px}
+h2 .en{font-family:var(--mono);font-weight:600;font-size:.78em;color:var(--sky);direction:ltr;unicode-bidi:isolate}
+.body{flex:1;min-height:0;display:flex;flex-direction:column}
+.cols{display:flex;gap:44px;flex:1;min-height:0;align-items:flex-start}
+.col{min-width:0}
+.col.text{flex:1}
+.col.code{flex:1.5}
+.cols.wide .col.code{flex:2}
+.cols.even .col.code{flex:1}
+.cols.diagram .col.text{flex:1.15}
+.cols.diagram .col.dia{flex:1;align-self:stretch}
+.cols.diagram.wd .col.text{flex:1}
+.cols.diagram.wd .col.dia{flex:1.25}
+.lead{font-size:34px;line-height:1.5;margin:0 0 22px;color:var(--ink)}
+.lead b{color:var(--sky)}
+ul.bul{list-style:none;margin:0;padding:0}
+ul.bul li{position:relative;font-size:32px;line-height:1.45;padding-right:40px;margin-bottom:16px}
+ul.bul li::before{content:'';position:absolute;right:6px;top:.62em;width:16px;height:16px;border-radius:5px;background:var(--sky);transform:rotate(45deg) scale(.9)}
+ul.bul li b{color:var(--sky);font-weight:700}
+ul.bul.tight li{font-size:30px;margin-bottom:12px}
+.ic{font-family:var(--mono);font-size:.86em;background:rgba(84,197,248,.12);border:1px solid rgba(84,197,248,.25);border-radius:8px;padding:1px 10px;margin:0 4px;direction:ltr;unicode-bidi:isolate;color:#CFE6FF;white-space:nowrap}
+.muted{color:var(--muted)}
+.note{font-size:28px;line-height:1.5;color:var(--muted);margin-top:12px}
+
+/* callouts */
+.warn,.tip,.key{border-radius:18px;padding:16px 22px;font-size:29px;line-height:1.45;margin-top:14px;border:1px solid}
+.warn{background:rgba(255,107,129,.10);border-color:rgba(255,107,129,.45)}
+.tip{background:rgba(46,230,166,.09);border-color:rgba(46,230,166,.4)}
+.key{background:rgba(255,193,8,.09);border-color:rgba(255,193,8,.45)}
+.warn b,.tip b,.key b{font-weight:800}
+.warn b{color:var(--rose)} .tip b{color:var(--teal)} .key b{color:var(--amber)}
+
+/* ---------- code blocks ---------- */
+pre.code{position:relative;margin:0;direction:ltr;text-align:left;background:var(--code);border:1px solid rgba(84,197,248,.24);
+  border-radius:20px;padding:46px 22px 20px;font:500 27px/1.36 var(--mono);color:#E6EEF7;overflow:hidden;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.35)}
+pre.code.sm{font-size:25px;padding-top:42px}
+pre.code::before{content:attr(data-file);position:absolute;top:0;right:0;font:500 19px/1 var(--mono);color:var(--muted);padding:10px 16px;background:rgba(255,255,255,.05);border-radius:0 19px 0 12px}
+pre.code::after{content:'';position:absolute;top:14px;left:18px;width:12px;height:12px;border-radius:50%;background:var(--rose);box-shadow:20px 0 0 var(--amber),40px 0 0 var(--teal)}
+pre.code code{display:block;white-space:pre}
+.ln{display:block;white-space:pre;min-height:1.36em}
+.kw{color:#FF8FB8}.ty{color:#8BE9FD}.st{color:#C3E88D}.nu{color:#FFD166}.cm{color:#AFC1D4;font-style:italic}.an{color:#FFC108}.fn{color:#D8EAFF}.ip{color:#FFD166}
+.cm[dir=rtl],.st[dir=rtl]{unicode-bidi:isolate}
+.ip{direction:ltr;unicode-bidi:isolate}
+.stack{display:flex;flex-direction:column;gap:18px;width:100%}
+
+/* run cue */
+.run{margin-top:auto;display:flex;align-items:center;gap:26px;align-self:flex-start;background:rgba(255,193,8,.10);border:1.5px solid rgba(255,193,8,.55);border-radius:16px;padding:12px 22px;font-size:29px}
+.run .lbl{font-weight:800;color:var(--amber);white-space:nowrap}
+.run .lbl::before{content:'▶';display:inline-block;margin-left:10px;font-size:.8em}
+.run code{direction:ltr;unicode-bidi:isolate;font-size:.92em;background:rgba(0,0,0,.35);padding:6px 14px;border-radius:10px;color:#FFE08A}
+.run .menu{color:#C9D6E3;font-size:1em;border-right:2px solid rgba(255,193,8,.4);padding-right:24px}
+.run .menu .ic{font-size:.9em}
+.body + .run{margin-top:22px}
+
+/* tables */
+table.tbl{width:100%;border-collapse:collapse;font-size:29px;line-height:1.4}
+table.tbl th{background:rgba(84,197,248,.14);color:var(--sky);font-weight:800;text-align:right;padding:14px 20px;border-bottom:2px solid rgba(84,197,248,.4)}
+table.tbl td{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.09);vertical-align:top}
+table.tbl tr:last-child td{border-bottom:0}
+table.tbl td.mono{font-family:var(--mono);direction:ltr;text-align:left;color:#CFE6FF;font-size:26px}
+table.tbl th.l{text-align:left;direction:ltr}
+table.tbl td b{color:var(--sky)}
+table.tbl .ok{color:var(--teal);font-weight:800} table.tbl .no{color:var(--rose);font-weight:800}
+
+/* chips / cards */
+.chips{display:flex;flex-wrap:wrap;gap:12px}
+.chips span{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-size:24px;padding:8px 18px;border-radius:999px;border:1px solid rgba(84,197,248,.4);background:rgba(84,197,248,.08);color:#CFE6FF}
+.cards{display:grid;gap:22px}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards.three{grid-template-columns:1fr 1fr 1fr}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:20px;padding:22px 26px}
+.card h3{font-size:32px;color:var(--sky);margin-bottom:12px}
+.card h3 .ic{font-size:.8em}
+.card p,.card li{font-size:28px;line-height:1.45;margin:0}
+.card ol,.card ul{margin:0;padding-right:28px}
+.card li{margin-bottom:8px}
+
+/* agenda */
+.agenda{display:grid;grid-template-columns:1fr 1fr;gap:30px;flex:1}
+.agenda .part{background:rgba(255,255,255,.035);border:1px solid rgba(84,197,248,.25);border-radius:24px;padding:26px 30px}
+.agenda h3{font-size:38px;color:var(--sky);margin-bottom:16px;display:flex;align-items:center;gap:14px}
+.agenda h3 .tag{font-family:var(--mono);font-size:24px;background:var(--deep);color:#fff;border-radius:10px;padding:4px 12px;direction:ltr}
+.agenda ol{margin:0;padding-right:34px;font-size:30px;line-height:1.55}
+.agenda li span{color:var(--muted);font-size:.85em}
+
+/* title + divider */
+.slide.title,.slide.divider{justify-content:center;align-items:flex-start}
+.slide.title::before,.slide.divider::before{content:none}
+.slide.title .kick,.slide.divider .kick{font-size:30px;color:var(--sky);font-weight:700;margin-bottom:18px}
+.slide.title h1{font-size:118px;letter-spacing:-.5px;margin-bottom:10px}
+.slide.title h1 .en{font-family:var(--mono);font-weight:600;color:var(--sky);direction:ltr;unicode-bidi:isolate;font-size:.9em}
+.slide.title h2{font-size:52px;font-weight:500;color:var(--muted);margin-bottom:44px}
+.slide.title .hint{margin-top:40px;color:var(--muted);font-size:26px}
+.slide.divider h1{font-size:120px}
+.slide.divider .big{font-size:64px;color:var(--sky);font-weight:800;margin-bottom:14px}
+.slide.divider .sub{font-size:34px;color:var(--muted);margin-top:16px;max-width:1300px;line-height:1.5}
+.mark{position:relative;width:150px;height:150px;margin-bottom:34px}
+.mark i{position:absolute;display:block}
+.mark .m1{left:0;top:0;width:150px;height:150px;background:var(--sky);clip-path:polygon(0 58%,58% 0,100% 0,0 100%)}
+.mark .m2{left:0;top:0;width:150px;height:150px;background:var(--deep);clip-path:polygon(42% 100%,100% 42%,100% 72%,72% 100%)}
+.mark .m3{left:0;top:0;width:150px;height:150px;background:#042B59;clip-path:polygon(42% 100%,57% 85%,72% 100%)}
+
+/* recap, exercises */
+.recap{display:grid;grid-template-columns:1fr 1fr;gap:34px;flex:1}
+.recap .part h3{font-size:34px;color:var(--sky);margin-bottom:14px}
+.recap ul{list-style:none;margin:0;padding:0}
+.recap li{font-size:28px;line-height:1.45;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.recap li b{color:var(--ink);font-weight:800}
+.recap li .ic{font-size:.82em}
+.ex{counter-reset:ex;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:18px 26px}
+.ex li{counter-increment:ex;position:relative;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:18px;padding:18px 84px 18px 22px;font-size:28px;line-height:1.45}
+.ex li::before{content:counter(ex);position:absolute;right:20px;top:16px;width:46px;height:46px;border-radius:12px;background:var(--amber);color:#042B59;font-weight:800;font-size:28px;display:flex;align-items:center;justify-content:center}
+.ex li.wide{grid-column:1/-1}
+
+/* day 2 preview */
+.next{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:10px}
+.next .card h3{font-size:40px}
+.next .card li{font-size:29px}
+
+/* timing bars (slide 5) */
+.bars{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+.bars .bar span{display:block;font-size:27px;margin-bottom:6px;color:var(--muted)}
+.bars .bar i{display:block;width:var(--w);font-style:normal;font-family:var(--mono);font-size:24px;padding:8px 16px;border-radius:10px;background:linear-gradient(90deg,var(--deep),var(--sky));color:#042B59;font-weight:600;direction:ltr;text-align:left;transform-origin:right}
+.slide.active .bars .bar i{animation:grow .9s var(--ease) both;animation-delay:calc(var(--i,0)*90ms + 500ms)}
+@keyframes grow{from{transform:scaleX(0)}to{transform:none}}
+
+/* layer stack (DI) */
+.layers{display:flex;flex-direction:column;gap:10px}
+.layers .ly{background:var(--card);border:1.5px solid rgba(84,197,248,.4);border-radius:14px;padding:12px 18px;font-size:27px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.layers .ly code{color:#CFE6FF;font-size:24px;direction:ltr}
+.layers .arrow{text-align:center;color:var(--sky);font-size:26px;line-height:1}
+
+/* class-modifier mini table */
+.mods{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:center;font-size:28px}
+.mods code{font-size:26px;color:var(--amber);direction:ltr}
+
+/* ============================================================
+   Diagrams (base CSS = final state; .play adds motion)
+   ============================================================ */
+.diagram{position:relative;width:100%;height:100%}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes dim{from{opacity:1}to{opacity:.3}}
+
+/* 1) event loop */
+.el{display:flex;flex-direction:column;gap:6px}
+.el .lane{display:flex;align-items:center;gap:22px;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.25);border-radius:16px;padding:10px 20px;min-height:86px}
+.el .lane.ev{border-color:rgba(255,193,8,.4)}
+.el .lt{width:330px;flex:none;font-size:25px;color:var(--sky);font-weight:700;line-height:1.2}
+.el .lt small{display:block;font:500 19px/1.3 var(--sans);color:#C9D6E3;margin-top:4px}
+.el .lane.ev .lt{color:var(--amber)}
+.el .chips{gap:10px}
+.el .chip{font:700 27px/1 var(--mono);background:var(--deep);color:#fff;padding:13px 18px;border-radius:12px;border:0}
+.el .lane.ev .chip{background:#8a6400}
+.el .larrow{display:flex;align-items:center;gap:14px;padding:0 44px;color:var(--amber);font-size:20px;line-height:1.2}
+.el .larrow i{font-style:normal;font-size:34px;line-height:1}
+.el .larrow b{font-weight:800}
+.el .console{flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:8px;background:var(--code);border-radius:16px;padding:10px 22px;font:500 26px/1.45 var(--mono);direction:ltr;text-align:left;border:1px solid rgba(84,197,248,.2)}
+.el .console .ct{color:#C9D6E3;font-family:var(--sans);direction:rtl;text-align:right;font-size:22px;margin-bottom:4px}
+.el .o{color:#C3E88D;unicode-bidi:isolate} .el .o.ev{color:#FFD166}
+.play.el .chip{animation:pop .4s both var(--d),dim .5s forwards var(--dc)}
+.play.el .o{animation:fadein .35s both var(--d)}
+
+/* 4) riverpod graph (fixed 900x640 coordinate space) */
+.rp{width:940px;height:760px}
+.rp .scope{position:absolute;left:0;right:0;top:0;height:470px;border:2px dashed rgba(84,197,248,.65);border-radius:26px}
+.rp .scope-title{position:absolute;top:-22px;right:34px;background:var(--bg);padding:0 14px;color:var(--sky);font:800 27px var(--sans)}
+.rp .scope-title code{color:var(--sky)}
+.rp .node,.rp .wnode{position:absolute;background:var(--card);border:2px solid var(--sky);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 12px}
+.rp .node{width:300px;height:130px}
+.rp .node b,.rp .wnode b{font:700 27px var(--mono);direction:ltr;unicode-bidi:isolate;color:var(--ink)}
+.rp .node small,.rp .wnode small{font:500 23px/1.3 var(--sans);color:#D5E1EC;text-align:center}
+.rp .wnode small{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-size:20px}
+.rp .p1{top:90px;right:50px}
+.rp .p2{top:90px;left:50px}
+.rp .p3{top:300px;left:300px;width:340px;border-color:var(--teal)}
+.rp .wnode{top:550px;width:430px;height:150px;border-color:rgba(255,255,255,.45)}
+.rp .w1{right:30px}
+.rp .w2{left:30px}
+.rp .flag{position:absolute;top:-18px;left:16px;background:var(--amber);color:#042B59;font:800 20px var(--sans);padding:3px 12px;border-radius:999px;opacity:0}
+.rp svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.rp svg line,.rp svg path{stroke:rgba(255,255,255,.45);stroke-width:3;fill:none;marker-start:url(#dot);marker-end:url(#arr)}
+.rp svg text{fill:#C9D6E3;font:600 20px var(--mono);direction:ltr;text-anchor:start}
+.rp .pulse{position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--amber);box-shadow:0 0 18px var(--amber);opacity:0;offset-rotate:0deg}
+.rp .pu1{offset-path:path('M245 550 L160 220')}
+.rp .pu2{offset-path:path('M300 220 L380 300')}
+.rp .pu3{offset-path:path('M470 430 L695 550')}
+.play.rp .pulse{animation:travel .8s linear both;animation-delay:var(--d)}
+.play.rp .flash{animation:flash 1s both var(--d)}
+.play.rp .flag{animation:flagin 1.4s both var(--d)}
+@keyframes travel{0%{offset-distance:0%;opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+@keyframes flash{0%{box-shadow:none}30%{box-shadow:0 0 0 5px var(--amber),0 0 40px var(--amber)}100%{box-shadow:none}}
+@keyframes flagin{0%{opacity:0;transform:translateY(8px)}20%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+
+/* 5) autoDispose */
+.ad{display:flex;gap:26px}
+.ad .screens{display:flex;flex-direction:column;align-items:center;gap:8px;width:330px}
+.ad .scr{width:300px;border:3px solid rgba(255,255,255,.28);border-radius:20px;overflow:hidden;background:#0d2440}
+.ad .bar{background:var(--deep);padding:7px 12px;font:700 20px var(--mono);direction:ltr;text-align:left;white-space:nowrap}
+.ad .scr ul{list-style:none;margin:0;padding:8px 14px;font-size:24px}
+.ad .scr li{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ad .scr li.hi{color:var(--sky);font-weight:700}
+.ad .scr .bd{padding:14px;font-size:24px;line-height:1.5;text-align:center}
+.ad .nav{display:flex;gap:26px;font-size:24px;color:#C9D6E3;font-weight:700}
+.ad .nav span{padding:4px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2)}
+.ad .store{flex:1;border:2px dashed rgba(84,197,248,.65);border-radius:24px;padding:36px 22px 22px;position:relative;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.ad .stt{position:absolute;top:-20px;right:28px;background:var(--bg);padding:0 12px;color:var(--sky);font-weight:800;font-size:25px}
+.ad .pv{background:var(--card);border:2px solid var(--sky);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ad .pv b{font:700 25px var(--mono);direction:ltr;unicode-bidi:isolate;flex-basis:100%;color:var(--ink)}
+.ad .s{font-size:24px;padding:5px 14px;border-radius:999px;background:rgba(255,255,255,.08)}
+.ad .s.drop{background:rgba(255,107,129,.15)} .ad .s.keep{background:rgba(255,193,8,.15)} .ad .s.create{background:rgba(46,230,166,.15)}
+.ad .log{font:500 27px/1.5 var(--mono);direction:ltr;text-align:left;color:#C9D6E3;background:var(--code);border-radius:12px;padding:12px 16px}
+.play.ad .s1{animation:scrA 9s both}
+.play.ad .s2{animation:scrB 9s both}
+.play.ad .push{animation:navP 9s both} .play.ad .pop{animation:navQ 9s both}
+.play.ad .pv1{animation:life1 9s both} .play.ad .pv2{animation:life2 9s both}
+.play.ad .s{opacity:0}
+.play.ad .s.c1{animation:chipA 9s both} .play.ad .s.k1{animation:chipK 9s both}
+.play.ad .s.d2{animation:chipD2 9s both} .play.ad .s.d1{animation:chipD1 9s both}
+@keyframes scrA{0%,12%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}16%,40%{border-color:rgba(255,255,255,.28);box-shadow:none}44%,100%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}}
+@keyframes scrB{0%,12%{border-color:rgba(255,255,255,.28);box-shadow:none}16%,40%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}44%,100%{border-color:rgba(255,255,255,.28);box-shadow:none}}
+@keyframes navP{0%,10%{color:var(--muted)}13%,17%{color:var(--amber);border-color:var(--amber)}22%,100%{color:var(--muted)}}
+@keyframes navQ{0%,38%{color:var(--muted)}41%,45%{color:var(--amber);border-color:var(--amber)}50%,100%{color:var(--muted)}}
+@keyframes life1{0%,15%{opacity:0;transform:translateY(14px)}19%,80%{opacity:1;transform:none}86%,100%{opacity:.18}}
+@keyframes life2{0%,15%{opacity:0;transform:translateY(14px)}19%,46%{opacity:1;transform:none}52%,100%{opacity:.18}}
+@keyframes chipA{0%,17%{opacity:0}21%,100%{opacity:1}}
+@keyframes chipK{0%,47%{opacity:0}51%,100%{opacity:1}}
+@keyframes chipD2{0%,47%{opacity:0}51%,100%{opacity:1}}
+@keyframes chipD1{0%,81%{opacity:0}85%,100%{opacity:1}}
+
+
+/* ---------- v2: lesson header + Dart/Riverpod tags ---------- */
+.lh{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.lh .num{width:50px;height:50px;border-radius:14px;background:var(--sky);color:#042B59;font:800 30px var(--mono);display:flex;align-items:center;justify-content:center;flex:none}
+.lh .lt{font-size:30px;font-weight:700;color:var(--sky)}
+.tag{font:700 21px var(--mono);padding:3px 14px;border-radius:999px;border:1.5px solid;direction:ltr;unicode-bidi:isolate;vertical-align:middle}
+.tag.dart{color:var(--amber);border-color:var(--amber)}
+.tag.riv{color:var(--teal);border-color:var(--teal)}
+/* agenda lesson cards */
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
+.lcard{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:16px;padding:12px 18px;min-width:0}
+.lcard .num{width:48px;height:48px;border-radius:12px;background:var(--deep);color:#fff;font:800 28px var(--mono);display:flex;align-items:center;justify-content:center;flex:none}
+.lcard.dart .num{background:var(--amber);color:#042B59}
+.lcard .t{font-size:30px;font-weight:700;flex:1;min-width:0}
+.lcard .t .tag{font-size:19px;margin-right:10px}
+.lcard .f{font:500 20px var(--mono);color:#C9D6E3;direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+/* tips slides (amber identity, visible in the O overview) */
+.slide.tips::before{color:var(--amber)}
+.slide.tips h2{color:var(--amber)}
+.tipbar{position:absolute;top:0;right:0;bottom:0;width:14px;background:linear-gradient(180deg,var(--amber),rgba(255,193,8,.15))}
+.tiplist{display:flex;flex-direction:column;gap:14px}
+.tipcard{display:flex;gap:20px;align-items:flex-start;background:rgba(255,193,8,.07);border:1px solid rgba(255,193,8,.35);border-radius:18px;padding:14px 20px}
+.tipcard .n{flex:none;width:46px;height:46px;border-radius:50%;background:var(--amber);color:#042B59;font:800 26px var(--mono);display:flex;align-items:center;justify-content:center;margin-top:2px}
+.tipcard .tx{flex:1;min-width:0;font-size:29px;line-height:1.45}
+.tipcard .tx .ic{font-size:.84em}
+.tipcard pre.code{margin-top:10px}
+pre.code.tip{padding:12px 20px 10px;font-size:24px;box-shadow:none;border-color:rgba(255,193,8,.3)}
+pre.code.tip::before,pre.code.tip::after{display:none}
+/* FutureBuilder: rebuild -> new request counter */
+.fb{display:flex;flex-direction:column;gap:16px;justify-content:center}
+.fb .fbbtn{align-self:center;max-width:100%;background:var(--deep);color:#fff;border-radius:14px;padding:10px 24px;font:700 25px var(--sans);display:flex;gap:14px;align-items:center;text-align:center;line-height:1.35}
+.fb .fbbtn code{color:#FFE08A;direction:ltr;unicode-bidi:isolate}
+.fb .fbpanels{display:flex;gap:16px}
+.fb .fbp{flex:1;min-width:0;border-radius:18px;padding:14px 18px;border:2px solid;display:flex;flex-direction:column;gap:10px}
+.fb .fbp.bad{border-color:var(--rose);background:rgba(255,107,129,.08)}
+.fb .fbp.good{border-color:var(--teal);background:rgba(46,230,166,.08)}
+.fb h4{margin:0;font-size:25px;line-height:1.3}
+.fb .reqs{display:flex;gap:8px;font-size:38px;min-height:52px;line-height:1.3}
+.fb .reqs i{font-style:normal}
+.fb .cnt{position:relative;min-height:44px;font-size:26px;font-weight:700}
+.fb .cnt b{position:absolute;right:0;top:0;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fb .good .cnt b{position:static;display:block}
+.fb .cnt b.c1,.fb .cnt b.c2,.fb .cnt b.c3{opacity:0}
+.play.fb .reqs i{animation:pop .4s both var(--d)}
+.play.fb .fbbtn{animation:btnpulse 1s 4 .3s}
+.play.fb .cnt .c1{animation:kc1 6s both}.play.fb .cnt .c2{animation:kc2 6s both}.play.fb .cnt .c3{animation:kc3 6s both}.play.fb .cnt .c4{animation:kc4 6s both}
+@keyframes btnpulse{0%,100%{box-shadow:none;transform:none}30%{box-shadow:0 0 0 6px rgba(255,193,8,.5);transform:scale(1.04)}}
+@keyframes kc1{0%,9%{opacity:0}10%,25%{opacity:1}26%,100%{opacity:0}}
+@keyframes kc2{0%,25%{opacity:0}26%,42%{opacity:1}43%,100%{opacity:0}}
+@keyframes kc3{0%,42%{opacity:0}43%,59%{opacity:1}60%,100%{opacity:0}}
+@keyframes kc4{0%,59%{opacity:0}60%,100%{opacity:1}}
+.fb .bridge{background:rgba(84,197,248,.1);border:1px solid rgba(84,197,248,.4);border-radius:14px;padding:12px 18px;font-size:27px;line-height:1.45}
+/* ---------- v3 readability (floor 24px) + layout ---------- */
+.slide::before{font-size:26px}
+.slide::after{font-size:24px;color:#D5E1EC}
+.slide.title .hint{font-size:26px;color:#D5E1EC}
+.tag{font-size:23px;padding:4px 16px}
+.lcard .t .tag{font-size:23px}
+.lgrid{gap:22px 26px}
+.lcard{padding:22px 22px}
+.lcard .f{font-size:24px}
+.lcard .t{font-size:32px}
+.el .lt small{font-size:24px;color:#D5E1EC}
+.el .larrow{font-size:25px}
+.el .console .ct{font-size:24px}
+.rp .node small{font-size:25px;color:#E3ECF5}
+.rp .wnode small{font-size:24px;color:#E3ECF5}
+.rp svg text{font-size:24px;fill:#E3ECF5;font-weight:700}
+.rp svg line,.rp svg path{stroke:rgba(255,255,255,.7)}
+.fb h4{font-size:27px}
+.fb .cnt{font-size:27px}
+.fb .fbbtn{font-size:26px}
+.fb .bridge{font-size:30px;line-height:1.5;padding:18px 22px}
+.fb .fbp{padding:18px 20px;gap:14px}
+.fb .reqs{font-size:44px;min-height:60px}
+.fb{gap:22px}
+.next .card h3{font-size:42px;margin-bottom:16px}
+.next .card li{font-size:33px;line-height:1.5;margin-bottom:12px}
+.next .card{padding:28px 32px}
+.tag{font-size:24px}
+.lcard .t .tag{font-size:24px}
+.lcard{min-height:118px}
+bdi[dir=ltr]{font-family:var(--mono);font-weight:600;font-size:.95em}
+.el .larrow bdi[dir=ltr]{color:var(--amber)}
+.el .larrow .n{display:inline-flex;flex:none;width:40px;height:40px;border-radius:50%;background:var(--amber);color:#042B59;font:800 24px var(--mono);align-items:center;justify-content:center}
+.lcard{min-height:136px}
+/* run bar: several chips */
+.run code + code{margin-right:0}
+
+/* ============================================================
+   Day 3 — lesson tags, agenda for 9 lessons, diagrams
+   ============================================================ */
+.tag.sto{color:var(--sky);border-color:var(--sky)}
+.tag.db{color:var(--rose);border-color:var(--rose)}
+.lgrid.g9{gap:14px 26px}
+.lgrid.g9 .lcard{min-height:0;padding:12px 20px}
+.lgrid.g9 .lcard .t{font-size:30px}
+.lgrid.g9 .lcard .num{width:46px;height:46px}
+.el .chip.ev{background:#9b2c3e}
+/* SWR steps */
+ol.steps{margin:0 0 6px;padding-right:44px;font-size:31px;line-height:1.5}
+ol.steps li{margin-bottom:12px;padding-right:6px}
+ol.steps li::marker{color:var(--amber);font-weight:800;font-family:var(--mono)}
+.bars i.bad{background:linear-gradient(90deg,#8a2a3a,var(--rose));color:#fff}
+.bars i{min-width:max-content}
+/* folder tree (L8) */
+.tree{font:500 26px/1.65 var(--mono);direction:ltr;text-align:left;background:var(--code);border:1px solid rgba(84,197,248,.24);border-radius:18px;padding:16px 22px;color:#CFE6FF}
+.tree .i1{padding-left:36px;color:var(--amber)}
+.tree em{font-style:normal;color:#C9D6E3;font-size:24px;font-family:var(--sans);unicode-bidi:isolate}
+.tree div:first-child em{direction:rtl;display:inline-block}
+
+/* D1: storage map (L3) */
+.sm{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:44px 22px 22px;border:2px dashed rgba(84,197,248,.65);border-radius:26px;height:auto}
+.sm .smt{position:absolute;top:-20px;right:28px;background:var(--bg);padding:0 12px;color:var(--sky);font-weight:800;font-size:26px}
+.sm .box{background:var(--card);border:2px solid;border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-height:250px;min-width:0}
+.sm .b1{border-color:var(--sky)} .sm .b2{border-color:var(--amber)} .sm .b3{border-color:var(--teal)} .sm .b4{border-color:var(--rose)}
+.sm h4{margin:0;font:700 27px var(--mono);direction:ltr;text-align:right;color:var(--ink)}
+.sm small{font-size:24px;line-height:1.35;color:#D5E1EC}
+.sm .it{margin-top:auto;align-self:flex-start;font:600 24px var(--mono);direction:ltr;unicode-bidi:isolate;background:rgba(255,193,8,.14);border:1px solid rgba(255,193,8,.5);color:#FFE08A;border-radius:10px;padding:6px 12px;max-width:100%;overflow-wrap:anywhere}
+.play.sm .it{animation:pop .5s both var(--d)}
+.play.sm .box{animation:flash 1.3s both var(--d)}
+
+/* D3: clean architecture layers (L8) */
+.ca{display:flex;flex-direction:column;justify-content:center}
+.ca .ly{position:relative;border-radius:20px;padding:16px 24px;border:2.5px solid;background:var(--card)}
+.ca .ly h4{margin:0 0 6px;font:700 32px var(--mono);direction:ltr;text-align:right}
+.ca .ly p{margin:0;font-size:25px;line-height:1.4;color:#E3ECF5}
+.ca .pr{border-color:var(--sky)} .ca .pr h4{color:var(--sky)}
+.ca .dm{border-color:var(--teal);background:rgba(46,230,166,.10)} .ca .dm h4{color:var(--teal)}
+.ca .da{border-color:var(--amber)} .ca .da h4{color:var(--amber)}
+.ca .ar{position:relative;display:flex;align-items:center;justify-content:center;gap:16px;height:84px;font-size:26px;font-weight:700;color:var(--amber)}
+.ca .ar i{font-style:normal;font-size:46px;line-height:1}
+.ca .ar b{position:absolute;right:calc(50% + 150px);width:20px;height:20px;border-radius:50%;background:var(--amber);box-shadow:0 0 16px var(--amber);opacity:0}
+.ca .ar .pd{top:0} .ca .ar .pu{bottom:0}
+.ca .flag2{position:absolute;top:-20px;left:18px;background:var(--teal);color:#042B59;font:800 24px var(--sans);padding:3px 14px;border-radius:999px}
+.play.ca .ly{animation:flash 1.2s both var(--d)}
+.play.ca .ar{animation:pop .5s both var(--d)}
+.play.ca .ar .pd{animation:fall .8s linear both var(--d)}
+.play.ca .ar .pu{animation:rise2 .8s linear both var(--d)}
+.play.ca .flag2{animation:pop .5s both var(--d)}
+@keyframes fall{0%{transform:translateY(0);opacity:1}100%{transform:translateY(64px);opacity:0}}
+@keyframes rise2{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-64px);opacity:0}}
+
+/* D4: offline-first sync flow (L9) */
+.sf{display:flex;flex-direction:column;gap:16px;height:auto}
+.sf .row{display:flex;align-items:stretch;gap:0}
+.sf .st{flex:1;min-width:0;background:var(--card);border:2px solid var(--sky);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:250px}
+.sf .st h4{margin:0;font:700 27px var(--mono);direction:ltr;text-align:right}
+.sf .st p{margin:0;font-size:24px;color:#D5E1EC}
+.sf .rw{display:flex;align-items:center;gap:10px;font-size:25px}
+.sf .rw .tk{flex:1}
+.sf .rw .w8{opacity:0}
+.sf .ob,.sf .sv{align-self:flex-start;font:600 24px var(--mono);direction:ltr;border-radius:10px;padding:6px 12px}
+.sf .ob{background:rgba(255,193,8,.14);border:1px solid rgba(255,193,8,.5);color:#FFE08A;opacity:.3}
+.sf .sv{background:rgba(46,230,166,.14);border:1px solid rgba(46,230,166,.5);color:#BFF7E2;font-family:var(--sans)}
+.sf .lane{position:relative;width:150px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.sf .lane::before{content:'';position:absolute;left:8px;right:8px;top:50%;border-top:3px dashed rgba(255,255,255,.55)}
+.sf .lane::after{content:'';position:absolute;left:2px;top:calc(50% - 9px);border:9px solid transparent;border-right:14px solid rgba(255,255,255,.75);border-left:0}
+.sf .lbl2{position:relative;top:-44px;font-size:24px;color:#E3ECF5;text-align:center;line-height:1.2}
+.sf .lane.net .off,.sf .lane.net .on{position:absolute;font-size:24px;font-weight:800;white-space:nowrap;padding:2px 10px;border-radius:999px}
+.sf .lane.net .off{top:calc(50% - 64px);background:rgba(255,107,129,.2);color:#FFC2CC;opacity:.3}
+.sf .lane.net .on{top:calc(50% + 22px);background:rgba(46,230,166,.2);color:#BFF7E2}
+.sf .dot,.sf .dotr{position:absolute;top:calc(50% - 11px);right:0;width:22px;height:22px;border-radius:50%;background:var(--amber);box-shadow:0 0 16px var(--amber);opacity:0}
+.sf .pull{position:relative;border:2px dashed rgba(46,230,166,.6);border-radius:16px;padding:12px 22px;font-size:26px;color:#BFF7E2;text-align:center}
+.sf .pull .dotr{left:0;right:auto;background:var(--teal);box-shadow:0 0 16px var(--teal)}
+.sf .log{display:grid;grid-template-columns:1fr 1fr;gap:6px 26px;background:var(--code);border:1px solid rgba(84,197,248,.2);border-radius:16px;padding:12px 22px;font-size:25px;line-height:1.45}
+.sf .log .o{display:flex;gap:12px;align-items:center;color:#C3E88D}
+.sf .log .o.ev{color:#FFC2CC}
+.sf .log .n{flex:none;display:inline-flex;width:36px;height:36px;border-radius:50%;background:var(--amber);color:#042B59;font:800 22px var(--mono);align-items:center;justify-content:center}
+.play.sf .tk,.play.sf .ok,.play.sf .sv,.play.sf .on,.play.sf .log .o{animation:pop .45s both var(--d)}
+.play.sf .ob,.play.sf .off{animation:pop .45s both var(--d),dim .5s forwards var(--dc)}
+.play.sf .w8{animation:pop .45s both var(--d),out .4s forwards var(--dc)}
+.play.sf .dot{animation:mvl .6s linear both var(--d)}
+.play.sf .dotr{animation:mvr 1.2s linear both var(--d)}
+@keyframes out{from{opacity:1}to{opacity:0}}
+@keyframes mvl{0%{right:0;opacity:1}90%{opacity:1}100%{right:calc(100% - 22px);opacity:0}}
+@keyframes mvr{0%{left:0;opacity:1}90%{opacity:1}100%{left:calc(100% - 22px);opacity:0}}
+#overview .slide .dot,#overview .slide .dotr,#overview .slide .ar b{opacity:0!important}
+
+/* ---------- review round 1: readability, contrast, layout ---------- */
+.slide::before{font-size:28px}
+.slide.title .hint{font-size:28px}
+.recap li .ic{font-size:24px}
+.chips.crud span{font-size:27px;padding:10px 20px}
+.sm small{font-size:26px}
+.sm .it{white-space:nowrap}
+.ca{justify-content:flex-start}
+.ca .ly p{font-size:27px}
+.tree em{font-size:25px}
+.homework .card{padding:28px 32px;min-height:230px}
+.homework .card h3{font-size:36px}
+.homework .card p{font-size:31px;line-height:1.55}
+/* sync flow */
+.sf .st{min-height:0}
+.sf .ui{align-self:flex-start;font-size:25px;background:rgba(84,197,248,.12);border:1px solid rgba(84,197,248,.45);border-radius:10px;padding:4px 12px}
+.sf .ui.off2{background:none;border:0;padding:0;color:#D5E1EC;font-size:24px;margin-top:auto}
+.sf .lbl2{font-size:26px}
+.sf .log{font-size:26px}
+.sf .log .n{font-size:24px}
+.sf .ob,.sf .lane.net .off{opacity:1;background:transparent;border:2px dashed rgba(201,214,227,.75);color:#D5E1EC}
+.sf .sv.dev{background:rgba(84,197,248,.14);border-color:rgba(84,197,248,.55);color:#CFE6FF}
+.play.sf .ob{animation:pop .45s both var(--d),actv var(--len) linear backwards var(--d)}
+.play.sf .lane.net .off{animation:pop .45s both var(--d),offon var(--len) linear backwards var(--d)}
+@keyframes actv{0%,100%{background:rgba(255,193,8,.14);border:2px solid rgba(255,193,8,.6);color:#FFE08A}}
+@keyframes offon{0%,100%{background:rgba(255,107,129,.22);border:2px solid rgba(255,107,129,.7);color:#FFD6DD}}
+.sf .pullw{position:relative;height:118px;margin-top:-4px}
+.sf .pa{position:absolute;top:0;height:46px;left:9.3%;right:36.4%;border:3px solid var(--teal);border-top:0;border-radius:0 0 16px 16px}
+.sf .ptail{position:absolute;left:calc(9.3% - 6px);top:-8px;width:15px;height:15px;border-radius:50%;background:var(--teal)}
+.sf .phead{position:absolute;right:calc(36.4% - 9.5px);top:-18px;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:18px solid var(--teal)}
+.nw{white-space:nowrap}
+.sf .lane.net .off{white-space:normal;text-align:center;line-height:1.25;border-radius:14px;top:calc(50% - 100px);padding:4px 10px}
+.sf .pt{position:absolute;top:34px;height:24px;left:9.3%;right:36.4%}
+.sf .pt .dotr{top:1px;background:var(--teal);box-shadow:0 0 16px var(--teal)}
+.el .lt small bdi[dir=ltr]{font-size:1em}
+.sf .pl{position:absolute;top:58px;left:9.3%;right:36.4%;text-align:center;font-size:26px;color:#BFF7E2}
+.sf .pl b{font-family:var(--mono);color:var(--teal)}
+
+/* ---------- presenter chrome ---------- */
+#progress{position:fixed;top:0;right:0;height:6px;width:0;background:linear-gradient(90deg,var(--deep),var(--sky));z-index:50;transition:width .4s var(--ease)}
+#counter{position:fixed;bottom:14px;left:18px;z-index:50;font:600 16px var(--mono);color:#C9D6E3;direction:ltr;background:rgba(6,26,46,.7);padding:4px 10px;border-radius:8px;letter-spacing:.5px;transition:opacity .4s}
+#nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:8px;opacity:.35;transition:opacity .3s}
+#nav:hover{opacity:1}
+body.idle #nav,body.idle #counter{opacity:0;pointer-events:none}
+#nav button{background:rgba(6,26,46,.8);border:1px solid rgba(84,197,248,.4);color:var(--sky);width:40px;height:34px;border-radius:8px;font-size:18px;cursor:pointer}
+#overview{position:fixed;inset:0;z-index:100;background:rgba(3,14,26,.96);overflow:auto;padding:28px;display:none}
+#overview.open{display:block}
+#overview .grid{display:grid;gap:18px;grid-template-columns:repeat(5,1fr)}
+#overview .thumb{position:relative;aspect-ratio:16/9;border:2px solid rgba(255,255,255,.15);border-radius:10px;overflow:hidden;cursor:pointer;background:var(--bg);transition:border-color .2s,transform .2s}
+#overview .thumb:hover{border-color:var(--sky);transform:scale(1.03)}
+#overview .thumb.cur{border-color:var(--amber)}
+#overview .thumb .num{position:absolute;bottom:6px;left:8px;z-index:2;font:700 13px var(--mono);color:#fff;background:rgba(0,0,0,.6);padding:2px 7px;border-radius:6px;direction:ltr}
+#overview .thumb .slide{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;opacity:1;visibility:visible;transition:none;pointer-events:none}
+#overview .slide .a,#overview .slide .ln,#overview .diagram *{animation:none!important;opacity:1}
+#overview .slide .flag,#overview .slide .pulse{opacity:0!important}
+#overview .thumb .diagram .s{opacity:1}
+
+/* ---------- static / reduced motion ---------- */
+html.static *,html.static *::before,html.static *::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#audit{display:none}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage">
+<div class="bgshape bg1"></div><div class="bgshape bg2"></div><div class="bgshape bg3"></div>
+
+<!-- ================= 1 TITLE ================= -->
+<section class="slide title">
+  <div class="mark a"><i class="m1"></i><i class="m2"></i><i class="m3"></i></div>
+  <div class="kick a">المستوى الثاني · ورشة عملية على 5 أيام</div>
+  <h1 class="a">ورشة <span class="en">Flutter</span> المتقدمة</h1>
+  <h2 class="a">اليوم الثالث — التخزين المحلي وقواعد البيانات + المعمارية (+ درسا Dart قصيران: Generics و Streams)</h2>
+  <div class="chips a"><span>Flutter 3.47.9</span><span>Dart 3.13.7</span><span>drift 2.35.3</span><span>shared_preferences 2.5.6</span><span>flutter_secure_storage 11.2.0</span></div>
+  <div class="hint a">→ أو Space للتقدّم · O نظرة عامة على الشرائح · F ملء الشاشة</div>
+</section>
+
+<!-- ================= 2 AGENDA ================= -->
+<section class="slide" data-kicker="برنامج اليوم">
+  <h2 class="a" dir="rtl"><bdi>9</bdi> دروس — رقم واحد في العرض والقائمة والملف</h2>
+  <div class="body">
+    <div class="lgrid g9">
+      <div class="lcard dart a"><span class="num">1</span><span class="t">Generics <span class="tag dart">Dart</span></span><span class="f">01_generics.dart</span></div>
+      <div class="lcard dart a"><span class="num">2</span><span class="t">Streams و StreamController <span class="tag dart">Dart</span></span><span class="f">02_streams.dart</span></div>
+      <div class="lcard a"><span class="num">3</span><span class="t">الإعدادات والتخزين الآمن <span class="tag sto">Storage</span></span><span class="f">03_prefs_secure_storage.dart</span></div>
+      <div class="lcard a"><span class="num">4</span><span class="t">الملفات مع path_provider <span class="tag sto">Storage</span></span><span class="f">04_files_path_provider.dart</span></div>
+      <div class="lcard a"><span class="num">5</span><span class="t">SQL و Drift <span class="tag db">Database</span></span><span class="f">05_sql_drift_basics.dart</span></div>
+      <div class="lcard a"><span class="num">6</span><span class="t">Migrations و <bdi dir="ltr">watch()</bdi> <span class="tag db">Database</span></span><span class="f">06_drift_migrations_watch.dart</span></div>
+      <div class="lcard a"><span class="num">7</span><span class="t">كاش بيانات الـ API <span class="tag db">Database</span></span><span class="f">07_api_cache.dart</span></div>
+      <div class="lcard a"><span class="num">8</span><span class="t">Clean Architecture <span class="tag riv">Architecture</span></span><span class="f">08_clean_architecture/</span></div>
+      <div class="lcard a"><span class="num">9</span><span class="t">Offline-first والمزامنة <span class="tag riv">Architecture</span></span><span class="f">09_offline_first_sync.dart</span></div>
+    </div>
+    <div class="key a" style="margin-top:18px"><b>التشغيل مرة واحدة:</b> <span class="ic">flutter run</span> من مجلد <span class="ic">day3_examples</span> بعد <span class="ic">dart run build_runner build</span> — ثم اختر الدرس من القائمة — وكل درس: الفكرة ← الكود ← جرّبه ← <b style="color:var(--amber)">💡 حيل الدرس</b>.</div>
+  </div>
+</section>
+
+<!-- ================= 3 L1 OPENER ================= -->
+<section class="slide" data-kicker="الدرس 1 · Generics · Dart">
+  <div class="lh a"><span class="num">1</span><span class="lt">الدرس 1 · Generics</span><span class="tag dart">Dart</span></div>
+  <h2 class="a">كود واحد يعمل مع أنواع متعددة — بأمان الأنواع</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">بدل UserRepository و ProductRepository بنفس المنطق تقريباً، نكتب <span class="ic">Repository&lt;T&gt;</span> واحداً.</li>
+        <li class="a"><b>إعادة استخدام + Type Safety:</b> المترجم يعرف أن <span class="ic">Box(42)</span> هو <span class="ic">Box&lt;int&gt;</span>.</li>
+        <li class="a">كل ما نراه اليوم مبني عليها: <span class="ic">Future&lt;T&gt;</span> · <span class="ic">Stream&lt;T&gt;</span> · <span class="ic">Provider&lt;T&gt;</span> · <span class="ic">Stream&lt;List&lt;Note&gt;&gt;</span> في Drift.</li>
+      </ul>
+      <div class="warn a"><b>📌 لماذا لا dynamic؟</b> dynamic يلغي فحص الأنواع ← الأخطاء تظهر وقت التشغيل (crash) بدل وقت الكتابة.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_generics.dart"><code>class Box&lt;T&gt; {
+  Box(this.value);
+  final T value;
+
+  // دالة عامة داخل class عام: نحوّل Box&lt;T&gt; إلى Box&lt;R&gt;
+  Box&lt;R&gt; map&lt;R&gt;(R Function(T value) transform) =&gt;
+      Box(transform(value));
+}
+
+T firstOrDefault&lt;T&gt;(List&lt;T&gt; items, T defaultValue) =&gt;
+    items.isEmpty ? defaultValue : items.first;
+
+final intBox = Box(42); // Dart يستنتج النوع: Box&lt;int&gt;
+final textBox = intBox.map((v) =&gt; 'القيمة $v'); // Box&lt;String&gt;</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 4 L1 bounds + Repository<T> ================= -->
+<section class="slide" data-kicker="الدرس 1 · Generics · Dart">
+  <h2 class="a">القيود <span class="en">T extends …</span> و <span class="en">Repository&lt;T&gt;</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">T extends num</span>: T يجب أن يكون رقماً، لذلك نستطيع استخدام <span class="ic">&gt;</span> و <span class="ic">+</span>.</li>
+        <li class="a">قيد بواجهة: كل نموذج يجب أن يملك <span class="ic">id</span> ← المستودع العام يعرف كيف يخزّنه.</li>
+        <li class="a"><span class="ic">users.save(Product(...))</span> ← <b>خطأ ترجمة</b>: النوع محمي ✅</li>
+      </ul>
+      <div class="tip a"><b>💡 الدرس 8:</b> نفس الفكرة في Clean Architecture — الشاشة تعتمد على الواجهة وليس على التنفيذ.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_generics.dart"><code>T maxOf&lt;T extends num&gt;(List&lt;T&gt; values) =&gt;
+    values.reduce((a, b) =&gt; a &gt; b ? a : b);
+
+abstract interface class Entity {
+  String get id;
+}
+
+abstract class Repository&lt;T extends Entity&gt; {
+  Future&lt;List&lt;T&gt;&gt; getAll();
+  Future&lt;T?&gt; getById(String id);
+  Future&lt;void&gt; save(T item);
+}
+
+// تنفيذ في الذاكرة يعمل مع أي Entity
+class InMemoryRepository&lt;T extends Entity&gt;
+    implements Repository&lt;T&gt; {
+  final _store = &lt;String, T&gt;{};</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 5 L1 Result<T> ================= -->
+<section class="slide" data-kicker="الدرس 1 · Generics · Dart">
+  <h2 class="a"><span class="en">Result&lt;T&gt;</span>: نجاح بقيمة أو فشل برسالة — بدل رمي الاستثناء</h2>
+  <div class="body"><div class="cols even">
+    <div class="col code">
+<pre class="code a" data-file="lib/shared/result.dart"><code>sealed class Result&lt;T&gt; {
+  const Result();
+  // ...
+}
+
+final class Success&lt;T&gt; extends Result&lt;T&gt; {
+  const Success(this.value);
+  final T value;
+}
+
+final class Failure&lt;T&gt; extends Result&lt;T&gt; {
+  const Failure(this.message, [this.error]);
+  final String message;
+}</code></pre>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_generics.dart"><code>final text = switch (result) {
+  Success(:final value) =&gt;
+      '✅ ${value.title} بسعر ${value.price}',
+  Failure(:final message) =&gt; '❌ $message',
+};</code></pre>
+      <ul class="bul tight" style="margin-top:22px">
+        <li class="a"><b>switch على sealed class:</b> المترجم يجبرنا على تغطية الحالتين.</li>
+        <li class="a">في <span class="ic">lib/shared/</span> لأن الدرسين 8 و 9 يستخدمانه (Dart خالص).</li>
+        <li class="a">وفي الشاشة: Widget عام <span class="ic">ChoiceRow&lt;T&gt;</span> يعمل مع enum و int بدون تعديل.</li>
+      </ul>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 1</span><code>lib/lessons/01_generics.dart</code></div>
+</section>
+
+<!-- ================= 6 TIPS L1 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 1 · Generics">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 1</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">حدّد النوع عند إنشاء مجموعة فارغة، وإلا تصبح <span class="ic">List&lt;dynamic&gt;</span>:
+<pre class="code tip" data-file="lib/lessons/01_generics.dart"><code>final ids = &lt;int&gt;[];          ✅</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">فعّل الفحص الصارم في analysis_options.yaml ليمنع dynamic الضمني: <span class="ic">strict-raw-types: true</span> و <span class="ic">strict-inference: true</span> تحت <span class="ic">analyzer: language:</span>.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx"><span class="ic">whereType&lt;T&gt;()</span> تفلتر وتحوّل النوع في خطوة واحدة:
+<pre class="code tip" data-file="lib/lessons/01_generics.dart"><code>final products = items.whereType&lt;Product&gt;().toList(); // List&lt;Product&gt;</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">لا تبالغ: إذا كان الـ class يُستخدم مع نوع واحد فقط فلا تجعله عاماً.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 7 L2 OPENER ================= -->
+<section class="slide" data-kicker="الدرس 2 · Streams و StreamController · Dart">
+  <div class="lh a"><span class="num">2</span><span class="lt">الدرس 2 · Streams و StreamController</span><span class="tag dart">Dart</span></div>
+  <h2 class="a">Future = قيمة واحدة لاحقاً · Stream = قيم تصل مع الوقت</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">أمثلة: رسائل شات، موقع GPS، تقدّم تحميل… و<b>نتائج قاعدة البيانات كلما تغيّرت</b> (الدرس 6).</li>
+        <li class="a"><span class="ic">async*</span> + <span class="ic">yield</span> لإنشاء Stream، و <span class="ic">await for</span> لاستهلاكه.</li>
+        <li class="a">التحويلات تشبه دوال القوائم لكنها تعمل على قيم تصل مع الوقت: distinct · where · map · take.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/02_streams.dart"><code>Stream&lt;int&gt; countdown(int from) async* {
+  for (var i = from; i &gt;= 0; i--) {
+    await Future.delayed(const Duration(milliseconds: 200));
+    yield i; // yield ترسل قيمة إلى من يستمع
+  }
+}
+
+await for (final n in countdown(3)) {
+  _log('العد: $n');
+}
+
+final evens = Stream.fromIterable([1, 2, 2, 3, 4, 4, 5, 6])
+    .distinct() // تجاهل القيم المكررة المتتالية
+    .where((n) =&gt; n.isEven) // الأرقام الزوجية فقط
+    .map((n) =&gt; 'زوجي: $n') // تحويل كل قيمة
+    .take(2); // أول قيمتين ثم يُغلق تلقائياً</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 8 L2 StreamController (diagram) ================= -->
+<section class="slide" data-kicker="الدرس 2 · Streams و StreamController · Dart">
+  <h2 class="a"><span class="en">StreamController.broadcast()</span>: مصدر واحد ← مستمعان</h2>
+  <div class="body"><div class="cols diagram">
+    <div class="col text">
+<pre class="code a sm" data-file="lib/lessons/02_streams.dart"><code>class ChatService {
+  // broadcast يسمح بأكثر من مستمع في نفس الوقت
+  final _controller =
+      StreamController&lt;String&gt;.broadcast();
+
+  // نكشف الـ Stream فقط (للقراءة)
+  Stream&lt;String&gt; get messages =&gt; _controller.stream;
+
+  void send(String text) {
+    if (_controller.isClosed) return;
+    _controller.add(text); // إرسال قيمة
+  }
+
+  Future&lt;void&gt; dispose() =&gt; _controller.close();
+}</code></pre>
+    </div>
+    <div class="col dia">
+      <div class="diagram el a" data-loop="9000">
+        <div class="lane"><div class="lt">StreamController<small>send · addError · close</small></div><div class="chips"><span class="chip" style="--d:.2s;--dc:7.6s">م1</span><span class="chip" style="--d:1.2s;--dc:7.6s">م2</span><span class="chip" style="--d:2.6s;--dc:7.6s">م3</span><span class="chip ev" style="--d:5.2s;--dc:7.6s">❌</span><span class="chip" style="--d:6.4s;--dc:7.6s">done</span></div></div>
+        <div class="larrow"><i>↓</i><span class="n">1</span><span>كل قيمة تصل إلى <b>كل</b> المستمعين</span></div>
+        <div class="lane"><div class="lt">المستمع 1 — الشات<small>⏸ <bdi dir="ltr">pause()</bdi> ثم ▶ <bdi dir="ltr">resume()</bdi></small></div><div class="chips"><span class="chip" style="--d:.5s;--dc:8s">م1</span><span class="chip" style="--d:1.5s;--dc:8s">م2</span><span class="chip" style="--d:4.4s;--dc:8s">م3</span><span class="chip ev" style="--d:5.5s;--dc:8s">❌</span><span class="chip" style="--d:6.7s;--dc:8s">onDone</span></div></div>
+        <div class="larrow"><i>↓</i><span class="n">2</span><span>أثناء الإيقاف تُخزَّن «م3» (buffer) وتصل عند الاستئناف</span></div>
+        <div class="lane ev"><div class="lt">المستمع 2 — العدّاد 🔔<small>onError: يتجاهل الخطأ</small></div><div class="chips"><span class="chip" style="--d:.5s;--dc:8s">1</span><span class="chip" style="--d:1.5s;--dc:8s">2</span><span class="chip" style="--d:2.9s;--dc:8s">3</span></div></div>
+        <div class="console">
+          <div class="ct">شاشة الدرس 2 (الشات الحي)</div>
+          <div class="o" style="--d:.5s">📩 م1 · 📩 م2</div>
+          <div class="o ev" style="--d:2.6s">⏸ المستمع 1 متوقف — العدّاد يستمر</div>
+          <div class="o" style="--d:4.4s">▶ resume ← وصلت م3 المخزّنة</div>
+          <div class="o ev" style="--d:5.5s">❌ خطأ: انقطع الاتصال</div>
+          <div class="o" style="--d:6.7s">✅ أُغلق الـ Stream (onDone)</div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 9 L2 lifecycle ================= -->
+<section class="slide" data-kicker="الدرس 2 · Streams و StreamController · Dart">
+  <h2 class="a"><span class="en">listen</span> · <span class="en">pause</span> · <span class="en">cancel</span> — ودورة الحياة في Flutter</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>كل مستمع يعالج الأخطاء</b> (onError)، وإلا يصبح الخطأ Unhandled.</li>
+        <li class="a"><span class="ic">pause()</span>: الرسائل تُخزَّن ولا تُعرض · <span class="ic">resume()</span>: تصل دفعة واحدة.</li>
+        <li class="a">في <span class="ic">dispose()</span>: ألغِ الاشتراكات ثم أغلق الـ controller — وإلا تسريب ذاكرة.</li>
+      </ul>
+      <div class="key a"><b>🔗 الدرس 6:</b> <span class="ic">select(notes).watch()</span> في Drift يعيد <span class="ic">Stream&lt;List&lt;Note&gt;&gt;</span> — نفس ما تعلمناه الآن، والـ controller يديره Drift.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/02_streams.dart"><code>// المستمع الأول: يعرض الرسائل
+_screenSub = _chat.messages.listen(
+  (msg) =&gt; setState(() =&gt; _messages.add('📩 $msg')),
+  onError: (Object e) =&gt;
+      setState(() =&gt; _messages.add('❌ خطأ: $e')),
+  onDone: () =&gt;
+      setState(() =&gt; _messages.add('✅ أُغلق الـ Stream (onDone)')),
+);
+
+sub.isPaused ? sub.resume() : sub.pause();
+
+@override
+void dispose() {
+  _screenSub?.cancel();
+  _badgeSub?.cancel();
+  _chat.dispose();
+  super.dispose();
+}</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 2</span><code>lib/lessons/02_streams.dart</code><code>flutter test test/streams_test.dart</code></div>
+</section>
+
+<!-- ================= 10 TIPS L2 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 2 · Streams و StreamController">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 2</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">في Flutter لا تحتاج listen يدوياً للعرض: StreamBuilder أو StreamProvider يشتركان ويلغيان الاشتراك تلقائياً:
+<pre class="code tip" data-file="lib/lessons/02_streams.dart"><code>final notesProvider = StreamProvider((ref) =&gt; ref.watch(dbProvider).watchNotes());</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">تحتاج مستمعَين لـ Stream عادي (single-subscription)؟ <span class="ic">controller.stream.asBroadcastStream()</span></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">أي StreamController تنشئه داخل provider أغلقه: <span class="ic">ref.onDispose(controller.close);</span></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">في الاختبارات تحقّق من ترتيب القيم بدل listen يدوي:
+<pre class="code tip" data-file="lib/lessons/02_streams.dart"><code>expect(countdown(2), emitsInOrder([2, 1, 0, emitsDone]));</code></pre></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 11 L3 OPENER: storage map (diagram) ================= -->
+<section class="slide nokick">
+  <div class="lh a"><span class="num">3</span><span class="lt">الدرس 3 · الإعدادات والتخزين الآمن</span><span class="tag sto">Storage</span></div>
+  <h2 class="a">أين أحفظ هذه القيمة؟ أربعة أماكن على الجهاز</h2>
+  <div class="body"><div class="cols diagram wd">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>سرّية؟</b> توكن، كلمة مرور ← <span class="ic">flutter_secure_storage</span> (الدرس 3)</li>
+        <li class="a"><b>صغيرة وبسيطة؟</b> الوضع الليلي، اللغة ← <span class="ic">shared_preferences</span> (الدرس 3)</li>
+        <li class="a"><b>ملف كامل؟</b> JSON، صورة، PDF ← <span class="ic">path_provider</span> + dart:io (الدرس 4)</li>
+        <li class="a"><b>كثيرة أو لها علاقات؟</b> ← SQLite عبر <span class="ic">Drift</span> — <span class="nw">الدروس <bdi dir="ltr">5–9</bdi></span></li>
+      </ul>
+      <div class="warn a"><b>⚠️</b> shared_preferences نص عادي غير مشفّر — لا تضع فيه توكن أبداً.</div>
+    </div>
+    <div class="col dia">
+      <div class="diagram sm a" data-loop="8000">
+        <div class="smt">داخل التطبيق (Sandbox)</div>
+        <div class="box b1" style="--d:.4s"><h4>shared_preferences</h4><small>XML · NSUserDefaults · localStorage</small><span class="it" style="--d:.4s">dark_mode = true</span></div>
+        <div class="box b2" style="--d:1.9s"><h4>secure_storage 🔐</h4><small>Keychain · Keystore · libsecret</small><span class="it" style="--d:1.9s">access_token = eyJh…</span></div>
+        <div class="box b3" style="--d:3.4s"><h4>Files</h4><small>Documents · Support · Cache</small><span class="it" style="--d:3.4s">notes.json · banner.png</span></div>
+        <div class="box b4" style="--d:4.9s"><h4>SQLite (Drift)</h4><small>ملف ‎.sqlite‎ · جداول وعلاقات</small><span class="it" style="--d:4.9s">products ⋈ categories</span></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 12 L3 prefs + override ================= -->
+<section class="slide" data-kicker="الدرس 3 · الإعدادات والتخزين الآمن · Storage">
+  <h2 class="a">تهيئة async في <span class="en">main()</span> ← ثم <span class="en">override</span> (نمط اليوم الأول، الدرس 7)</h2>
+  <div class="body"><div class="cols even">
+    <div class="col code" style="flex:1.35">
+<pre class="code a" data-file="lib/lessons/03_prefs_secure_storage.dart"><code>Future&lt;SharedPreferencesWithCache&gt;
+    initPreferences() async {
+  final prefs = await SharedPreferencesWithCache.create(
+    cacheOptions:
+        const SharedPreferencesWithCacheOptions(
+      allowList: {_kDarkMode,
+          _kFontScale, _kLaunchCount},
+    ),
+  );
+  return prefs;
+}
+
+// يجب أن يُعطى قيمة عبر override في main.dart
+final prefsProvider =
+    Provider&lt;SharedPreferencesWithCache&gt;(
+  (ref) =&gt;
+      throw UnimplementedError('override في main.dart'),
+);</code></pre>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/main.dart"><code>Future&lt;void&gt; main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await initPreferences();
+
+  runApp(
+    ProviderScope(
+      overrides:
+    [prefsProvider.overrideWithValue(prefs)],
+      child: const WorkshopApp(),
+    ),
+  );
+}</code></pre>
+      <div class="tip a"><b>💡 النتيجة:</b> كل الـ providers تقرأ الإعدادات بشكل <b>متزامن</b> بدون await — والوضع الليلي يغيّر ثيم التطبيق كله.</div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 13 L3 settings + secure ================= -->
+<section class="slide" data-kicker="الدرس 3 · الإعدادات والتخزين الآمن · Storage">
+  <h2 class="a">الواجهة تتغير فوراً ثم نحفظ · والتوكن في مكان مشفّر</h2>
+  <div class="body"><div class="cols even">
+    <div class="col code" style="flex:1.05">
+<pre class="code a" data-file="lib/lessons/03_prefs_secure_storage.dart"><code>@override
+AppSettings build() {
+  final prefs = ref.watch(prefsProvider);
+  return AppSettings(
+   darkMode: prefs.getBool(_kDarkMode) ?? false,
+   fontScale: prefs.getDouble(_kFontScale) ?? 1.0,
+   launchCount: prefs.getInt(_kLaunchCount) ?? 1,
+  );
+}
+
+Future&lt;void&gt; setDarkMode(bool value) async {
+  state = state.copyWith(darkMode: value);
+  await ref.read(prefsProvider).setBool(_kDarkMode,
+      value);
+}</code></pre>
+    </div>
+    <div class="col code" style="flex:1.22">
+<pre class="code a" data-file="lib/lessons/03_prefs_secure_storage.dart"><code>@override
+Future&lt;SessionState&gt; build() async {
+  try {
+    final token = await _storage.read(key: _kAccess);
+    return SessionState(accessToken: token);
+  } on MissingPluginException {
+    // لا يوجد تنفيذ للمنصة (مثلاً داخل flutter test)
+    return const SessionState(
+    problem:
+  'التخزين الآمن غير متاح هنا (لا يوجد Plugin)',
+    );
+  }
+}
+
+await _storage.write(key: _kAccess, value: access);</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 3</span><code>lib/lessons/03_prefs_secure_storage.dart</code><code>flutter test test/settings_test.dart</code></div>
+</section>
+
+<!-- ================= 14 TIPS L3 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 3 · الإعدادات والتخزين الآمن">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 3</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx"><span class="ic">SharedPreferences.getInstance()</span> القديمة ما زالت تعمل، لكن الموصى به الآن: <b>SharedPreferencesWithCache</b> (قراءة متزامنة من كاش) أو <b>SharedPreferencesAsync</b> (كل قراءة await من المنصة).</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">في الاختبارات استبدل المنصة بتخزين في الذاكرة:
+<pre class="code tip" data-file="lib/lessons/03_prefs_secure_storage.dart"><code>SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">iOS: Keychain يبقى بعد حذف التطبيق! علامة في prefs (تُحذف مع التطبيق) ثم <span class="ic">deleteAll()</span> عند أول تشغيل بعد إعادة التثبيت.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">لقراءة التوكن من كود يعمل في الخلفية والجهاز مقفل على iOS:
+<pre class="code tip" data-file="lib/lessons/03_prefs_secure_storage.dart"><code>iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),</code></pre></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 15 L4 OPENER ================= -->
+<section class="slide" data-kicker="الدرس 4 · الملفات مع path_provider · Storage">
+  <div class="lh a"><span class="num">4</span><span class="lt">الدرس 4 · الملفات مع path_provider</span><span class="tag sto">Storage</span></div>
+  <h2 class="a">path_provider يعطي «المسار» — والكتابة بـ <span class="en">dart:io</span></h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <table class="tbl a">
+        <thead><tr><th class="l" style="width:300px">الدالة</th><th>لماذا؟</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">Documents</td><td>بيانات المستخدم — تُنسخ احتياطياً في iOS</td></tr>
+          <tr><td class="mono">Support</td><td>ملفات التطبيق الداخلية (قواعد بيانات)</td></tr>
+          <tr><td class="mono">Cache</td><td>قد يحذفها النظام عند امتلاء الذاكرة</td></tr>
+        </tbody>
+      </table>
+      <div class="warn a"><b>🌐 الويب:</b> لا يوجد نظام ملفات — الشاشة تعرض شرحاً بدل الأمثلة.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/04_files_path_provider.dart"><code>class JsonFileStore {
+  JsonFileStore(this.file);
+  final File file;
+
+  Future&lt;List&lt;String&gt;&gt; read() async {
+    if (!await file.exists()) return []; // أول تشغيل
+    final text = await file.readAsString();
+    return (jsonDecode(text) as List).cast&lt;String&gt;();
+  }
+
+  Future&lt;void&gt; write(List&lt;String&gt; items) async {
+    // نكتب في ملف مؤقت ثم نعيد تسميته
+    final tmp = File('${file.path}.tmp');
+    await tmp.writeAsString(jsonEncode(items), flush: true);
+    await tmp.rename(file.path);
+  }
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 16 L4 image cache ================= -->
+<section class="slide" data-kicker="الدرس 4 · الملفات مع path_provider · Storage">
+  <h2 class="a">كاش صور على القرص: من الشبكة مرة واحدة، ثم من الملف</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">المجلد <span class="ic">Cache/images</span> — نحمّل الصورة كـ bytes عبر Dio ونكتبها.</li>
+        <li class="a">في الشاشة: «📡 من الشبكة» أول مرة، ثم «⚡ من الكاش» مع الحجم والزمن.</li>
+        <li class="a">الكتابة الآمنة (tmp ثم rename): انقطاع الكهرباء لا يترك JSON نصفه مكتوب.</li>
+        <li class="a">كل استدعاء لـ path_provider داخل try ← رسالة عربية إذا لم يوجد Plugin.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/04_files_path_provider.dart"><code>Future&lt;Directory&gt; _dir() async {
+  final cache = await getApplicationCacheDirectory();
+  return Directory(p.join(cache.path, 'images')).create(recursive: true);
+}
+
+Future&lt;(File, bool)&gt; get(String url, String fileName) async {
+  final file = File(p.join((await _dir()).path, fileName));
+  if (await file.exists()) return (file, true); // ✅ بدون شبكة
+
+  final res = await dio.get&lt;List&lt;int&gt;&gt;(
+    url,
+    options: Options(responseType: ResponseType.bytes),
+  );
+  await file.writeAsBytes(res.data!, flush: true);
+  return (file, false);
+}</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 4</span><code>lib/lessons/04_files_path_provider.dart</code></div>
+</section>
+
+<!-- ================= 17 TIPS L4 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 4 · الملفات مع path_provider">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 4</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">ابنِ المسارات بـ <span class="ic">package:path</span> وليس بجمع النصوص — الفاصل يختلف بين الأنظمة:
+<pre class="code tip" data-file="lib/lessons/04_files_path_provider.dart"><code>p.join(dir.path, 'images', 'a.png')   ✅</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">الملفات الكبيرة: لا تقرأها كاملة في الذاكرة — اقرأها كـ Stream (الدرس 2):
+<pre class="code tip" data-file="lib/lessons/04_files_path_provider.dart"><code>await file.openRead().transform(utf8.decoder).transform(const LineSplitter()).forEach(print);</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">Cache قد يُحذف في أي وقت ← لا تضع فيه شيئاً لا يمكن تحميله من جديد. وفي iOS: Documents تُنسخ إلى iCloud.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">لاختبار كود الملفات بدون path_provider: مرّر <span class="ic">Directory</span> في الـ constructor واستخدم <span class="ic">Directory.systemTemp.createTemp()</span> في الاختبار.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 18 L5 OPENER: tables ================= -->
+<section class="slide" data-kicker="الدرس 5 · SQL و Drift · Database">
+  <div class="lh a"><span class="num">5</span><span class="lt">الدرس 5 · SQL و Drift</span><span class="tag db">Database</span></div>
+  <h2 class="a">SQLite = قاعدة كاملة في ملف · Drift = نكتبها بـ Dart</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">كل class = <b>جدول</b>، وكل getter = <b>عمود</b>. المولّد يكتب الـ SQL والـ classes: <span class="ic">Product</span> للصف و <span class="ic">ProductsCompanion</span> للإدخال.</li>
+        <li class="a"><b>العلاقة One-to-Many:</b> كل منتج ينتمي إلى تصنيف ← <span class="ic">references(Categories, #id)</span> = مفتاح أجنبي.</li>
+        <li class="a">التوليد: <span class="ic">dart run build_runner build</span></li>
+      </ul>
+      <div class="key a"><b>🔗 الاتصال:</b> <span class="ic">driftDatabase(name: 'shop')</span> من drift_flutter في <span class="ic">lib/shared/database_connection.dart</span> — ملف على الجهاز، وWebAssembly على الويب.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/05_sql_drift_basics.dart"><code>class Categories extends Table {
+  IntColumn get id =&gt; integer().autoIncrement()();
+  TextColumn get name =&gt;
+      text().withLength(min: 1, max: 40).unique()();
+}
+
+// CREATE TABLE products (..., category_id INTEGER NOT NULL
+//   REFERENCES categories (id))
+class Products extends Table {
+  IntColumn get id =&gt; integer().autoIncrement()();
+  TextColumn get name =&gt; text()();
+  RealColumn get price =&gt; real()();
+  // العلاقة: مفتاح أجنبي (Foreign Key) يشير إلى categories.id
+  IntColumn get categoryId =&gt;
+      integer().references(Categories, #id)();
+}
+
+@DriftDatabase(tables: [Categories, Products])
+class ShopDatabase extends _$ShopDatabase {</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 19 L5 CRUD ================= -->
+<section class="slide" data-kicker="الدرس 5 · SQL و Drift · Database">
+  <h2 class="a">CRUD: الـ SQL فوق كل دالة، و Drift تحته</h2>
+  <div class="body">
+<pre class="code a" data-file="lib/lessons/05_sql_drift_basics.dart"><code>// SELECT * FROM products WHERE price &gt; ? ORDER BY price DESC
+Future&lt;List&lt;Product&gt;&gt; productsAbove(double minPrice) =&gt;
+    (select(products)
+          ..where((p) =&gt; p.price.isBiggerThanValue(minPrice))
+          ..orderBy([(p) =&gt; OrderingTerm.desc(p.price)]))
+        .get();
+
+// UPDATE products SET price = price * 0.9 WHERE category_id = ?
+Future&lt;int&gt; discountCategory(int categoryId) =&gt;
+    (update(products)..where((p) =&gt; p.categoryId.equals(categoryId))).write(
+      ProductsCompanion.custom(price: products.price * const Constant(0.9)),
+    );
+
+// DELETE FROM products WHERE price &lt; ?
+Future&lt;int&gt; deleteCheaperThan(double price) =&gt;
+    (delete(products)..where((p) =&gt; p.price.isSmallerThanValue(price))).go();</code></pre>
+    <div class="chips crud a" style="margin-top:20px"><span>INSERT ← into(t).insert(…)</span><span>SELECT ← (select(t)..where(…)).get()</span><span>UPDATE ← …write(…)</span><span>DELETE ← …go()</span></div>
+    <div class="tip a"><b>💡</b> أخطاء أسماء الأعمدة والأنواع يكتشفها المترجم قبل التشغيل — لا نصوص SQL خاطئة وقت التشغيل.</div>
+  </div>
+</section>
+
+<!-- ================= 20 L5 JOIN ================= -->
+<section class="slide" data-kicker="الدرس 5 · SQL و Drift · Database">
+  <h2 class="a"><span class="en">JOIN</span>: نقرأ من جدولين مرتبطين في استعلام واحد</h2>
+  <div class="body">
+<pre class="code a" data-file="lib/lessons/05_sql_drift_basics.dart"><code>// SELECT * FROM products INNER JOIN categories
+//   ON categories.id = products.category_id
+Future&lt;List&lt;(Product, Category)&gt;&gt; productsWithCategory() async {
+  final query = select(products).join([
+    innerJoin(categories, categories.id.equalsExp(products.categoryId)),
+  ]);
+  final rows = await query.get();
+  return [
+    for (final row in rows) (row.readTable(products), row.readTable(categories)),
+  ];
+}</code></pre>
+    <div class="cards three a" style="margin-top:20px">
+      <div class="card"><h3>INNER JOIN</h3><p>المنتجات التي لها تصنيف فقط — كل صف Record من جدولين.</p></div>
+      <div class="card"><h3>LEFT JOIN + COUNT</h3><p>يُظهر «ألعاب» بـ 0 منتج — INNER كان سيخفيها.</p></div>
+      <div class="card"><h3>المفتاح الأجنبي</h3><p>تصنيف 999 غير موجود ← <span class="ic">FOREIGN KEY</span> يرفض.</p></div>
+    </div>
+  </div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 5</span><code>lib/lessons/05_sql_drift_basics.dart</code><code>flutter test test/shop_database_test.dart</code></div>
+</section>
+
+<!-- ================= 21 TIPS L5 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 5 · SQL و Drift">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 5</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">بعد أي تعديل على الجداول أعد التوليد، أو اتركه يراقب التغييرات:
+<pre class="code tip" data-file="lib/lessons/05_sql_drift_basics.dart"><code>dart run build_runner watch -d</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">لرؤية كل SQL ينفّذه Drift في الاختبارات: <span class="ic">NativeDatabase.memory(logStatements: true)</span> — وفي التطبيق class يرث <span class="ic">QueryInterceptor</span> مع <span class="ic">interceptWith(…)</span>.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">عدة عمليات مرتبطة؟ ضعها في transaction: إما أن تنجح كلها أو لا شيء:
+<pre class="code tip" data-file="lib/lessons/05_sql_drift_basics.dart"><code>await db.transaction(() async { await a(); await b(); });</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">الإدخال الكثير: <span class="ic">batch((b) =&gt; b.insertAll(...))</span> أسرع بعشرات المرات من حلقة insert.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 22 L6 OPENER: migrations ================= -->
+<section class="slide" data-kicker="الدرس 6 · Migrations و watch() · Database">
+  <div class="lh a"><span class="num">6</span><span class="lt">الدرس 6 · Migrations و <bdi dir="ltr">watch()</bdi></span><span class="tag db">Database</span></div>
+  <h2 class="a">المستخدم عنده ملف بالإصدار القديم — كيف نحوّله؟</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">schemaVersion</span>: رقم الإصدار الحالي للمخطط — نزيده مع كل تغيير.</li>
+        <li class="a"><b>onCreate:</b> مستخدم جديد ← أنشئ كل الجداول.</li>
+        <li class="a"><b>onUpgrade:</b> مستخدم قديم ← خطوة لكل إصدار بعد إصداره، بالترتيب.</li>
+        <li class="a">في الشاشة: زر «محاكاة هاتف عليه الإصدار 1» ← يعيد فتح الملف فيظهر <span class="ic">onUpgrade: من 1 إلى 2</span>.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/06_drift_migrations_watch.dart"><code>// 🆕 الإصدار 2 — قيمة افتراضية حتى تحصل الصفوف القديمة على false
+BoolColumn get pinned =&gt;
+    boolean().withDefault(const Constant(false))();
+
+@override
+int get schemaVersion =&gt; 2;
+
+@override
+MigrationStrategy get migration =&gt; MigrationStrategy(
+      onCreate: (m) async {
+        await m.createAll();
+      },
+      onUpgrade: (m, from, to) async {
+        if (from &lt; 2) {
+          await m.addColumn(notes, notes.pinned);
+        }
+        // if (from &lt; 3) { await m.createTable(tags); }
+      },
+    );</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 23 L6 watch() ================= -->
+<section class="slide" data-kicker="الدرس 6 · Migrations و watch() · Database">
+  <h2 class="a"><span class="en">watch()</span> بدل <span class="en">get()</span> — الواجهة تتحدث وحدها</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">نفس الاستعلام لكنه يعيد <span class="ic">Stream&lt;List&lt;Note&gt;&gt;</span> يرسل قائمة جديدة بعد كل insert / update / delete.</li>
+        <li class="a"><span class="ic">StreamProvider</span> يشترك ويلغي الاشتراك تلقائياً — <b>لا setState ولا «تحديث» يدوي</b>.</li>
+        <li class="a">في الشاشة عدّاد: «أرسل الـ Stream N مرة».</li>
+      </ul>
+      <div class="key a"><b>🔗 الدرس 2:</b> هذا هو الـ Stream نفسه — Drift يدير الـ controller، ونحن نستمع فقط.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/06_drift_migrations_watch.dart"><code>Stream&lt;List&lt;Note&gt;&gt; watchNotes() =&gt; (select(notes)
+      ..orderBy([
+        (n) =&gt; OrderingTerm.desc(n.pinned),
+        (n) =&gt; OrderingTerm.desc(n.createdAt),
+      ]))
+    .watch();
+
+final notesProvider = StreamProvider&lt;List&lt;Note&gt;&gt;(
+  (ref) =&gt; ref.watch(notesDatabaseProvider).watchNotes(),
+);
+
+Future&lt;void&gt; _add() async {
+  final text = _controller.text.trim();
+  // لاحظ: لا setState للقائمة — watch() سيرسل القائمة الجديدة وحده
+  await ref.read(notesDatabaseProvider).addNote(text.isEmpty
+      ? 'ملاحظة جديدة' : text);</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 6</span><code>lib/lessons/06_drift_migrations_watch.dart</code><code>flutter test test/notes_migration_test.dart</code></div>
+</section>
+
+<!-- ================= 24 TIPS L6 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 6 · Migrations و watch()">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 6</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">لا تعدّل migration قديمة نُشرت للمستخدمين — أضف خطوة جديدة <span class="ic">from &lt; 3</span> دائماً.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">احفظ نسخة من المخطط مع كل إصدار، واجعل Drift يولّد خطوات واختبارات الترحيل:
+<pre class="code tip" data-file="lib/lessons/06_drift_migrations_watch.dart"><code>dart run drift_dev make-migrations</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">اختبر الترحيل: <span class="ic">NativeDatabase.memory(setup: …)</span> ينشئ الجدول بشكل الإصدار القديم ثم يفتحه Drift — انظر <span class="ic">test/notes_migration_test.dart</span></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">SQL مباشر يتحدث تلقائياً أيضاً إذا ذكرت الجداول:
+<pre class="code tip" data-file="lib/lessons/06_drift_migrations_watch.dart"><code>customSelect('SELECT ...', readsFrom: {notes}).watch()</code></pre></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 25 L7 OPENER: SWR ================= -->
+<section class="slide" data-kicker="الدرس 7 · كاش بيانات الـ API · Database">
+  <div class="lh a"><span class="num">7</span><span class="lt">الدرس 7 · كاش بيانات الـ API</span><span class="tag db">Database</span></div>
+  <h2 class="a">stale-while-revalidate: اعرض المحفوظ فوراً، وحدّث في الخلفية</h2>
+  <div class="body"><div class="cols even">
+    <div class="col text">
+      <ol class="steps">
+        <li class="a">اعرض الكاش من Drift فوراً (حتى لو قديماً = stale)</li>
+        <li class="a">انتهت صلاحيته (TTL)؟ اطلب من الـ API في الخلفية</li>
+        <li class="a">احفظ النتيجة (upsert) ← <span class="ic">watch()</span> يحدّث الواجهة وحده</li>
+        <li class="a">فشلت الشبكة؟ تبقى البيانات القديمة + رسالة ودّية</li>
+      </ol>
+      <div class="key a"><b>القاعدة:</b> قاعدة البيانات هي «مصدر الحقيقة» للواجهة، والشبكة فقط تحدّثها.</div>
+    </div>
+    <div class="col text">
+      <div class="bars a">
+        <div class="bar"><span>بدون كاش: شاشة فارغة حتى يرد الخادم</span><i style="--w:100%">⏳ ≈ 800ms</i></div>
+        <div class="bar"><span>مع SWR: القائمة من Drift فوراً</span><i style="--w:22%">≈ 20ms</i></div>
+        <div class="bar"><span>بدون إنترنت: بدون كاش</span><i class="bad" style="--w:100%">❌ شاشة خطأ</i></div>
+        <div class="bar"><span>بدون إنترنت: مع SWR</span><i style="--w:22%">✅ آخر نسخة</i></div>
+      </div>
+      <div class="tip a"><b>💡 جرّب:</b> افتح الشاشة ← فعّل «محاكاة عدم الاتصال» ← اخرج وادخل: القائمة ما زالت هنا.</div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 26 L7 code ================= -->
+<section class="slide" data-kicker="الدرس 7 · كاش بيانات الـ API · Database">
+  <h2 class="a"><span class="en">refresh()</span> يكتب في Drift، و <span class="en">revalidate()</span> يقرر متى</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">isStale()</span>: لا يوجد وقت تحديث، أو مرّ أكثر من <span class="ic">ttl</span>.</li>
+        <li class="a"><b>upsert</b> للمنتجات + وقت التحديث في <b>transaction واحدة</b>.</li>
+        <li class="a">الشبكة فشلت؟ حالة <span class="ic">failed</span> برسالة ودّية — والقائمة تبقى لأنها من Drift.</li>
+        <li class="a">السحب للأسفل = <span class="ic">revalidate(force: true)</span>.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a sm" data-file="lib/lessons/07_api_cache.dart"><code>try {
+  if (!force &amp;&amp; !await cache.isStale()) {
+    // ✅ الكاش ما زال صالحاً ← لا طلب شبكة إطلاقاً
+    emit(CacheStatus(CachePhase.fresh,
+        fetchedAt: await cache.lastFetch()));
+    return;
+  }
+  await cache.refresh();
+} on DioException catch (e) {
+  // ❌ الشبكة فشلت — البيانات القديمة تبقى معروضة
+  emit(CacheStatus(
+    CachePhase.failed,
+    fetchedAt: await cache.lastFetch(),
+    error: friendlyNetworkError(e),
+  ));
+}</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 7</span><code>lib/lessons/07_api_cache.dart</code></div>
+</section>
+
+<!-- ================= 27 TIPS L7 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 7 · كاش بيانات الـ API">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 7</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">لا تمسح الجدول ثم تُدخل من جديد (ستومض القائمة فارغة) — استخدم upsert:
+<pre class="code tip" data-file="lib/lessons/07_api_cache.dart"><code>b.insertAllOnConflictUpdate(db.cachedProducts, rows)</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">خزّن وقت التحديث مع البيانات في نفس transaction، وإلا قد تحفظ بيانات جديدة بوقت قديم إذا انقطع التطبيق بينهما.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">TTL مختلف لكل نوع بيانات: الأسعار دقائق، التصنيفات ساعات، الصفحات الثابتة أيام.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">للصفحات (pagination): خزّن مع كل صف رقم الصفحة أو ترتيبه (position) حتى تعيد الترتيب نفسه من الكاش.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 28 L8 OPENER: layers (diagram) ================= -->
+<section class="slide nokick">
+  <div class="lh a"><span class="num">8</span><span class="lt">الدرس 8 · Clean Architecture</span><span class="tag riv">Architecture</span></div>
+  <h2 class="a">ثلاث طبقات — وكل الأسهم تشير إلى <span class="en">domain</span></h2>
+  <div class="body"><div class="cols diagram wd">
+    <div class="col text">
+      <div class="tree a">
+        <div>lib/features/quotes/ <em>← في الدرس: lib/lessons/08_clean_architecture/</em></div>
+        <div class="i1">domain/ <em>quote · quotes_repository · quote_use_cases</em></div>
+        <div class="i1">data/ <em>quote_dto · remote · local · repository_impl</em></div>
+        <div class="i1">presentation/ <em>quotes_providers · quotes_screen</em></div>
+      </div>
+      <ul class="bul tight" style="margin-top:18px">
+        <li class="a"><b>feature-first:</b> كل ما يخص الميزة في مجلدها — حذف ميزة = حذف مجلد.</li>
+        <li class="a"><b>domain:</b> Dart خالص — قواعد العمل (المفضّلة أولاً) تُختبر بدون Flutter.</li>
+        <li class="a">تبديل Dio أو Drift لا يلمس الشاشة ولا قواعد العمل.</li>
+      </ul>
+    </div>
+    <div class="col dia">
+      <div class="diagram ca a" data-loop="7000">
+        <div class="ly pr" style="--d:.3s"><h4>presentation</h4><p>QuotesScreen · quotesProvider · Riverpod</p></div>
+        <div class="ar" style="--d:1s"><i>↓</i><span>يستورد domain فقط</span><b class="pd" style="--d:1s"></b></div>
+        <div class="ly dm" style="--d:1.7s"><h4>domain</h4><p>Quote · QuotesRepository (واجهة) · WatchQuotes</p><span class="flag2" style="--d:4.2s">لا يستورد Flutter · Dio · Drift</span></div>
+        <div class="ar" style="--d:2.6s"><i>↑</i><span>يطبّق الواجهة (implements)</span><b class="pu" style="--d:2.6s"></b></div>
+        <div class="ly da" style="--d:3.3s"><h4>data</h4><p>QuotesRepositoryImpl · Remote (Dio) · Local (Drift)</p></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 29 L8 code ================= -->
+<section class="slide" data-kicker="الدرس 8 · Clean Architecture · Architecture">
+  <h2 class="a">Repository (API + DB): الواجهة في domain، والتنفيذ في data</h2>
+  <div class="body"><div class="cols even">
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/08_clean_architecture/data/quotes_repository_impl.dart"><code>@override
+Stream&lt;List&lt;Quote&gt;&gt; watchQuotes() =&gt;
+    local.watchAll().map(
+      (rows) =&gt; [for (final r in rows) r.toEntity()],
+    );
+
+@override
+Future&lt;Result&lt;int&gt;&gt; refresh() async {
+  try {
+    final dtos = await remote.fetchQuotes();
+    await local.upsertAll(dtos);
+    return Success(dtos.length);
+  } on DioException catch (e) {
+    // خطأ تقني (Dio) يتحوّل هنا إلى رسالة
+    return Failure(friendlyNetworkError(e), e);
+  }
+}</code></pre>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/08_clean_architecture/presentation/quotes_providers.dart"><code>// النوع المُعلن = الواجهة من domain
+final quotesRepositoryProvider =
+    Provider&lt;QuotesRepository&gt;(
+  (ref) =&gt; QuotesRepositoryImpl(
+    remote: ref.watch(quotesRemoteProvider),
+    local: ref.watch(quotesLocalProvider),
+  ),
+);
+
+final quotesProvider = StreamProvider&lt;List&lt;Quote&gt;&gt;(
+  (ref) =&gt; ref.watch(watchQuotesProvider)(),
+);</code></pre>
+      <div class="tip a"><b>💡 جرّب:</b> «تحديث» ← ⭐ على اقتباس ← «تحديث» مرة أخرى: المفضّلة لم تُمسح (upsert بدون isFavorite).</div>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 8</span><code>lib/lessons/08_clean_architecture/</code><code>flutter test test/quotes_repository_test.dart</code></div>
+</section>
+
+<!-- ================= 30 TIPS L8 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 8 · Clean Architecture">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 8</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx"><b>feature-first:</b> فريقان يعملان على ميزتين بدون تعارض، وما يُشارك بين الميزات فقط يذهب إلى <span class="ic">lib/core/</span> أو <span class="ic">lib/shared/</span>.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">Use cases ليست إجبارية: إذا كان الـ use case سطراً يمرّر للـ Repository فقط، فلا بأس أن تستدعي الشاشة الـ Repository مباشرة. أضفه عندما توجد قاعدة عمل.</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">لا تمرّر DTO أو صف Drift إلى الشاشة: حوّله إلى Entity في طبقة data — فإذا تغيّر الـ API أو الجدول لا تتغير الشاشة.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">مراجعة سريعة: افتح أي ملف في <span class="ic">domain/</span> — أي import لـ flutter أو dio أو drift = مخالفة لاتجاه الاعتماد.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 31 L9 OPENER: sync flow (diagram) ================= -->
+<section class="slide nokick">
+  <div class="lh a"><span class="num">9</span><span class="lt">الدرس 9 · Offline-first والمزامنة</span><span class="tag riv">Architecture</span></div>
+  <h2 class="a">اكتب محلياً دائماً — والطابور يوصل التغييرات عند الاتصال</h2>
+  <div class="body">
+    <div class="diagram sf a" data-loop="10000">
+      <div class="row">
+        <div class="st"><h4>📱 UI</h4><p>إضافة · تعديل · حذف</p><span class="ui" style="--d:.2s">+ مهمة 1</span><span class="ui" style="--d:2.9s">+ مهمة 2</span><span class="ui off2">بدون انتظار الشبكة</span></div>
+        <div class="lane"><span class="lbl2">write</span><b class="dot" style="--d:.3s"></b><b class="dot" style="--d:3s"></b></div>
+        <div class="st"><h4>Drift: tasks</h4>
+          <div class="rw"><span class="tk" style="--d:.9s">مهمة 1</span><span class="w8" style="--d:.9s;--dc:6.4s">⏳</span><span class="ok" style="--d:6.4s">✅</span></div>
+          <div class="rw"><span class="tk" style="--d:3.6s">مهمة 2</span><span class="w8" style="--d:3.6s;--dc:7.2s">⏳</span><span class="ok" style="--d:7.2s">✅</span></div>
+          <div class="rw"><span class="tk" style="--d:9.2s">✏️ من جهاز آخر</span><span class="ok" style="--d:9.2s">✅</span></div>
+        </div>
+        <div class="lane"><span class="lbl2">نفس transaction</span><b class="dot" style="--d:1.1s"></b><b class="dot" style="--d:3.8s"></b></div>
+        <div class="st"><h4>📤 Outbox</h4>
+          <span class="ob" style="--d:1.7s;--len:4.7s">#1 upsert</span>
+          <span class="ob" style="--d:4.4s;--len:2.8s">#2 upsert</span>
+        </div>
+        <div class="lane net"><span class="off" style="--d:2.2s;--len:3s">📴<br>لا اتصال</span><span class="on" style="--d:5.2s">📶 push</span><b class="dot" style="--d:5.7s"></b><b class="dot" style="--d:6.5s"></b></div>
+        <div class="st"><h4>☁️ الخادم</h4>
+          <span class="sv" style="--d:6.4s">مهمة 1</span>
+          <span class="sv" style="--d:7.2s">مهمة 2</span>
+          <span class="sv dev" style="--d:7.8s">✏️ من جهاز آخر</span>
+        </div>
+      </div>
+      <div class="pullw"><div class="pa"></div><i class="ptail"></i><i class="phead"></i><div class="pt"><b class="dotr" style="--d:8s"></b></div><div class="pl"><b>pull</b>: ما تغيّر على الخادم يعود إلى Drift · التعارض: Last-Write-Wins</div></div>
+      <div class="log">
+        <div class="o" style="--d:.9s"><span class="n">1</span> الكتابة في Drift فوراً — الواجهة تتحدث بـ <bdi dir="ltr">watch()</bdi></div>
+        <div class="o" style="--d:1.7s"><span class="n">2</span> سطر في Outbox داخل نفس transaction</div>
+        <div class="o ev" style="--d:2.2s"><span class="n">3</span> لا اتصال: الطابور يكبر ولا يضيع شيء</div>
+        <div class="o" style="--d:5.2s"><span class="n">4</span> عاد الاتصال: push بالترتيب ثم الحذف من الطابور</div>
+        <div class="o" style="--d:8s"><span class="n">5</span> pull: ما تغيّر على الخادم يصل إلى Drift</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 32 L9 code ================= -->
+<section class="slide" data-kicker="الدرس 9 · Offline-first والمزامنة · Architecture">
+  <h2 class="a">الطابور + <span class="en">SyncEngine</span> + «آخر كتابة تفوز»</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">saveTask</span>: الجدول + سطر في <span class="ic">pending_changes</span> داخل <b>transaction واحدة</b>.</li>
+        <li class="a"><b>push:</b> أقدم تغيير أولاً، ولا يُحذف من الطابور إلا بعد رد الخادم.</li>
+        <li class="a"><b>تعارض:</b> نسخة الخادم أحدث (updatedAt)؟ يرفض تغييرنا ونكتب نسخته محلياً.</li>
+        <li class="a">جرّب «تعديل من جهاز آخر» أثناء الانقطاع ثم اتصل.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a sm" data-file="lib/lessons/09_offline_first_sync.dart"><code>for (final change in pending) {
+  final task = Task.fromJson(jsonDecode(change.payload)
+      as Map&lt;String, dynamic&gt;);
+  final newer = await server.push(change.op, task);
+  await db.transaction(() async {
+    if (newer != null) {
+      conflicts++; // الخادم فاز ← نكتب نسخته محلياً
+      await db.into(db.tasks).insertOnConflictUpdate(newer);
+    }
+    // نحذف التغيير من الطابور فقط بعد أن رد الخادم
+    await (db.delete(db.pendingChanges)..where((c) =&gt;
+        c.id.equals(change.id))).go();
+  });
+  pushed++;
+}
+
+// ⚖️ Last-Write-Wins: نسخة الخادم أحدث؟ نرفض التغيير ونعيدها
+if (current != null &amp;&amp; current.updatedAt.isAfter(task.updatedAt))
+  return current;</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 9</span><code>lib/lessons/09_offline_first_sync.dart</code><code>flutter test test/offline_sync_test.dart</code></div>
+</section>
+
+<!-- ================= 33 TIPS L9 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 9 · Offline-first والمزامنة">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 9</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">حالة الشبكة الحقيقية: <span class="ic">connectivity_plus</span> يعطي Stream للتغيّرات — لكنه يعرف «هل توجد شبكة» وليس «هل الخادم يرد»:
+<pre class="code tip" data-file="lib/lessons/09_offline_first_sync.dart"><code>Connectivity().onConnectivityChanged.listen((results) { ... });</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">اجعل كل عملية على الخادم idempotent: إرسال نفس التغيير مرتين لا يضر (التطبيق قد يُغلق بعد رد الخادم وقبل حذف السطر من الطابور).</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">ادمج التغييرات المتتالية لنفس العنصر قبل الإرسال (coalescing): 10 تعديلات أثناء الانقطاع = طلب واحد بآخر نسخة.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">المعرّفات تُنشأ على الجهاز (UUID) — لا تنتظر الخادم ليعطيك id وإلا لن تعمل أوفلاين.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 34 RECAP ================= -->
+<section class="slide" data-kicker="خلاصة اليوم">
+  <h2 class="a">ملخص اليوم الثالث — درس واحد لكل سطر</h2>
+  <div class="body"><div class="recap">
+    <div class="part a">
+      <h3>الدروس 1 – 5</h3>
+      <ul>
+        <li class="a"><b>1 · Generics:</b> <span class="ic">Box&lt;T&gt;</span> · <span class="ic">T extends num</span> · <span class="ic">Repository&lt;T&gt;</span> · <span class="ic">Result&lt;T&gt;</span> بدل الاستثناءات.</li>
+        <li class="a"><b>2 · Streams:</b> async* · التحويلات · broadcast لعدة مستمعين · pause/resume · وأغلق كل controller.</li>
+        <li class="a"><b>3 · الإعدادات والتوكن:</b> prefs للبسيط (تهيئة في main + override) · secure storage للسري.</li>
+        <li class="a"><b>4 · الملفات:</b> Documents / Support / Cache · كتابة آمنة tmp ثم rename · كاش صور.</li>
+        <li class="a"><b>5 · SQL و Drift:</b> جداول · CRUD · مفتاح أجنبي · INNER / LEFT JOIN.</li>
+      </ul>
+    </div>
+    <div class="part a">
+      <h3>الدروس 6 – 9</h3>
+      <ul>
+        <li class="a"><b>6 · Migrations و <bdi dir="ltr">watch()</bdi>:</b> schemaVersion + onUpgrade خطوة لكل إصدار · الواجهة تتحدث بـ Stream.</li>
+        <li class="a"><b>7 · كاش الـ API:</b> DB مصدر الحقيقة · TTL · upsert · stale-while-revalidate.</li>
+        <li class="a"><b>8 · Clean Architecture:</b> presentation ← domain → data · Repository (API + DB) · feature-first.</li>
+        <li class="a"><b>9 · Offline-first:</b> اكتب محلياً + Outbox في transaction · push ثم pull · Last-Write-Wins.</li>
+      </ul>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 35 EXERCISES ================= -->
+<section class="slide" data-kicker="تمارين عملية">
+  <h2 class="a">تمارين — عدّل أمثلة التطبيق بنفسك</h2>
+  <div class="body">
+    <ol class="ex">
+      <li class="a"><b>الدرس 1:</b> أضف إلى <span class="ic">Result&lt;T&gt;</span> دالة <span class="ic">getOrElse(T fallback)</span> واستخدمها في <span class="ic">_resultDemo</span>.</li>
+      <li class="a"><b>الدرس 3:</b> أضف إعداد «اللغة» (ar / en) إلى <span class="ic">AppSettings</span> و allowList، واحفظه مثل الوضع الليلي.</li>
+      <li class="a"><b>الدرس 5:</b> اكتب <span class="ic">productsInCategory(String name)</span> بـ JOIN + where على اسم التصنيف، وأضف لها اختباراً.</li>
+      <li class="a"><b>الدرس 6:</b> ارفع <span class="ic">schemaVersion</span> إلى 3 وأضف عمود <span class="ic">color</span> للملاحظات مع خطوة <span class="ic">from &lt; 3</span> واختبار ترحيل.</li>
+      <li class="a wide"><b>الدرس 9:</b> طبّق الدمج (coalescing) في <span class="ic">saveTask</span>: إذا كان للمهمة سطر upsert في الطابور فحدّث الـ payload بدل إضافة سطر جديد — وتأكد أن <span class="ic">test/offline_sync_test.dart</span> ما زال يمر.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= 36 CLOSING / DAY 4 ================= -->
+<section class="slide" data-kicker="نهاية اليوم الثالث">
+  <h2 class="a">غداً — اليوم الرابع</h2>
+  <div class="body">
+    <div class="next">
+      <div class="card a"><h3>الاختبارات</h3><ul>
+        <li>Unit tests واختبار الـ providers عبر <span class="ic">ProviderContainer</span></li>
+        <li>mocktail: Mocks و stubs للـ Repository</li>
+        <li>Widget tests و Integration tests</li>
+        <li>نبني على اختبارات اليوم: Drift في الذاكرة + Fake remote</li>
+      </ul></div>
+      <div class="card a"><h3>الواجهة</h3><ul>
+        <li>Animations · Slivers · CustomPainter</li>
+        <li>Responsive و Theming</li>
+        <li>Localization و RTL (بدل Directionality اليدوي)</li>
+        <li>Accessibility</li>
+      </ul></div>
+    </div>
+    <div class="cards two homework a" style="margin-top:26px">
+      <div class="card"><h3>+ درس Dart قصير: Extension methods</h3><p>نضيف دوال لأنواع لا نملكها، مثل <span class="ic">context.theme</span> و <span class="ic">email.isEmail</span> — بدون وراثة وبدون تعديل المكتبة.</p></div>
+      <div class="card"><h3>قبل الغد</h3><p>شغّل <span class="ic">flutter test</span> واقرأ ملفات <span class="ic">test/</span> الستة — غداً نكتب مثلها لكل طبقة. — أسئلة؟</p></div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /stage -->
+
+<div id="counter">1 / 36</div>
+<div id="nav"><button id="prevBtn" title="السابق">›</button><button id="ovBtn" title="نظرة عامة (O)">⊞</button><button id="nextBtn" title="التالي">‹</button></div>
+<div id="overview"><div class="grid"></div></div>
+<pre id="audit"></pre>
+
+<script>
+(function(){
+  'use strict';
+  var errs=[];
+  window.addEventListener('error',function(e){errs.push(String(e.message||e));});
+
+  var stage=document.getElementById('stage');
+  var slides=Array.prototype.slice.call(stage.querySelectorAll('.slide'));
+  var n=slides.length, cur=-1, loopTimer=null, leaveTimer=null;
+  var params=location.search;
+  var isStatic=/[?&](static|check)\b/.test(params)||matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(isStatic) document.documentElement.classList.add('static');
+
+  /* ---------- stagger indices ---------- */
+  slides.forEach(function(s){
+    var i=0;
+    s.querySelectorAll('.a').forEach(function(el){
+      el.style.setProperty('--i',i);
+      if(el.tagName==='PRE') el.style.setProperty('--pi',i);
+      i++;
+    });
+  });
+
+  /* ---------- tiny Dart highlighter ---------- */
+  var KW={};'abstract as async await base break case catch class const continue covariant default do dynamic else enum export extends extension external factory false final finally for get hide if implements import in interface is late library mixin new null on operator part required rethrow return sealed set show static super switch sync this throw true try typedef var void when while with yield'.split(' ').forEach(function(k){KW[k]=1;});
+  var TY={};'int double num bool String List Map Set Future Stream Object Never Iterable Duration DateTime Timer Completer Stopwatch Isolate SendPort ReceivePort Ref WidgetRef BuildContext Widget'.split(' ').forEach(function(k){TY[k]=1;});
+  var AR=/[؀-ۿ]/;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function tokLine(line){
+    var out='',m;
+    var re=/(\/\/.*)|(r?'(?:[^'\\]|\\.)*'|r?"(?:[^"\\]|\\.)*")|(@[A-Za-z_]\w*)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)|(\s+)|([\s\S])/g;
+    while((m=re.exec(line))){
+      if(m[1]){
+        var mm=/^(\/\/+)([\s\S]*)$/.exec(m[1]);
+        var lead=/^(\s*\d+\)\s*)([\s\S]*)$/.exec(mm[2]); if(lead&&AR.test(lead[2])){ out+='<span class="cm">'+esc(mm[1]+lead[1])+'</span><span class="cm" dir="rtl">'+esc(lead[2])+'</span>'; } else { var lead=/^(\s*\d+\)\s*)([\s\S]*)$/.exec(mm[2]); if(lead&&AR.test(lead[2])){ out+='<span class="cm">'+esc(mm[1]+lead[1])+'</span><span class="cm" dir="rtl">'+esc(lead[2])+'</span>'; } else { out+='<span class="cm">'+esc(mm[1])+'</span><span class="cm" dir="'+(AR.test(mm[2])?'rtl':'ltr')+'">'+esc(mm[2])+'</span>'; } }
+      }else if(m[2]){
+        var s=esc(m[2]);
+        if(m[2].charAt(0)!=='r') s=s.replace(/\$\{[^}]*\}|\$\w+/g,function(x){return '<span class="ip">'+x+'</span>';});
+        out+='<span class="st"'+(AR.test(m[2])?' dir="rtl"':'')+'>'+s+'</span>';
+      }else if(m[3]){ out+='<span class="an">'+esc(m[3])+'</span>'; }
+      else if(m[4]){ out+='<span class="nu">'+m[4]+'</span>'; }
+      else if(m[5]){
+        var w=m[5], rest=line.slice(re.lastIndex), isCall=/^\s*\(/.test(rest)&&!/^\s*\(\s*\)\s*(=>|\{)/.test(rest)&&!KW[w];
+        if(KW[w]) out+='<span class="kw">'+w+'</span>';
+        else if(TY[w]||/^_?\$?[A-Z]/.test(w)) out+='<span class="ty">'+w+'</span>';
+        else if(isCall) out+='<span class="fn">'+esc(w)+'</span>';
+        else out+=esc(w);
+      }else out+=esc(m[0]);
+    }
+    return out;
+  }
+  stage.querySelectorAll('pre.code code').forEach(function(code){
+    var lines=code.textContent.replace(/\s+$/,'').split('\n');
+    code.innerHTML=lines.map(function(l,i){return '<span class="ln" style="--i:'+i+'">'+(tokLine(l)||' ')+'</span>';}).join('');
+  });
+
+  /* ---------- auto-fit code font so the widest line fits its block (min 22px) ---------- */
+  function fitCode(){
+    stage.querySelectorAll('pre.code').forEach(function(pre){
+      var code=pre.querySelector('code'); if(!code) return;
+      pre.style.fontSize='';
+      var fs=parseFloat(getComputedStyle(pre).fontSize), guard=0;
+      while(code.scrollWidth>code.clientWidth+1 && fs>22 && guard++<8){ fs-=1; pre.style.fontSize=fs+'px'; }
+    });
+  }
+  fitCode();
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitCode);
+
+  /* ---------- fit 16:9 stage ---------- */
+  function fit(){
+    var s=Math.min(innerWidth/1920,innerHeight/1080);
+    stage.style.transform='scale('+s+')';
+    stage.style.left=((innerWidth-1920*s)/2)+'px';
+    stage.style.top=((innerHeight-1080*s)/2)+'px';
+  }
+  addEventListener('resize',fit); fit();
+
+  /* ---------- diagrams loop ---------- */
+  function startLoop(slide){
+    stopLoop();
+    if(isStatic) return;
+    var d=slide.querySelector('.diagram[data-loop]'); if(!d) return;
+    var play=function(){ d.classList.remove('play'); void d.offsetWidth; d.classList.add('play'); };
+    play();
+    loopTimer=setInterval(play,parseInt(d.getAttribute('data-loop'),10)||8000);
+    loopTimer._d=d;
+  }
+  function stopLoop(){
+    if(loopTimer){ clearInterval(loopTimer); if(loopTimer._d) loopTimer._d.classList.remove('play'); loopTimer=null; }
+  }
+
+  /* ---------- navigation ---------- */
+  var progress=document.getElementById('progress'), counter=document.getElementById('counter');
+  function go(i,dir){
+    i=Math.max(0,Math.min(n-1,i));
+    if(i===cur) return;
+    if(dir===undefined) dir=i>cur?1:-1;
+    stage.classList.toggle('back',dir<0);
+    if(cur>=0){
+      var old=slides[cur];
+      old.classList.remove('active'); old.classList.add('leaving');
+      clearTimeout(leaveTimer);
+      leaveTimer=setTimeout(function(){ old.classList.remove('leaving'); },650);
+      slides.forEach(function(s){ if(s!==old) s.classList.remove('leaving'); });
+    }
+    cur=i;
+    slides[cur].classList.add('active');
+    progress.style.width=((cur+1)/n*100)+'%';
+    counter.textContent=(cur+1)+' / '+n;
+    if(('#'+(cur+1))!==location.hash) history.replaceState(null,'','#'+(cur+1));
+    startLoop(slides[cur]);
+  }
+  function next(){ go(cur+1,1); } function prev(){ go(cur-1,-1); }
+  function fromHash(){ var h=parseInt((location.hash||'').replace('#',''),10); return isNaN(h)?0:h-1; }
+  addEventListener('hashchange',function(){ var i=fromHash(); if(i!==cur) go(i); });
+
+  /* ---------- overview ---------- */
+  var ov=document.getElementById('overview'), grid=ov.querySelector('.grid');
+  function openOverview(){
+    grid.innerHTML='';
+    var cols=5, w=(ov.clientWidth-56-(cols-1)*18)/cols, sc=w/1920;
+    slides.forEach(function(s,i){
+      var t=document.createElement('div'); t.className='thumb'+(i===cur?' cur':'');
+      var c=s.cloneNode(true); c.classList.add('active'); c.classList.remove('leaving'); c.style.transform='scale('+sc+')';
+      c.querySelectorAll('.diagram').forEach(function(d){ d.classList.remove('play'); });
+      t.appendChild(c);
+      var num=document.createElement('span'); num.className='num'; num.textContent=i+1; t.appendChild(num);
+      t.addEventListener('click',function(ev){ ev.stopPropagation(); closeOverview(); go(i); });
+      grid.appendChild(t);
+    });
+    ov.classList.add('open');
+    var curT=grid.querySelector('.thumb.cur'); if(curT) curT.scrollIntoView({block:'center'});
+  }
+  function closeOverview(){ ov.classList.remove('open'); grid.innerHTML=''; }
+  function toggleOverview(){ ov.classList.contains('open')?closeOverview():openOverview(); }
+
+  /* ---------- fullscreen ---------- */
+  function toggleFull(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  }
+
+  /* ---------- input ---------- */
+  addEventListener('keydown',function(e){
+    if(e.altKey||e.ctrlKey||e.metaKey) return;
+    var k=e.key;
+    if(ov.classList.contains('open')&&(k==='Escape'||k==='o'||k==='O')){ closeOverview(); e.preventDefault(); return; }
+    switch(k){
+      case 'ArrowRight': case 'PageDown': case ' ': case 'Enter': if(e.shiftKey&&k===' '){prev();}else{next();} e.preventDefault(); break;
+      case 'ArrowLeft': case 'PageUp': case 'Backspace': prev(); e.preventDefault(); break;
+      case 'ArrowDown': next(); e.preventDefault(); break;
+      case 'ArrowUp': prev(); e.preventDefault(); break;
+      case 'Home': go(0,-1); e.preventDefault(); break;
+      case 'End': go(n-1,1); e.preventDefault(); break;
+      case 'f': case 'F': toggleFull(); break;
+      case 'o': case 'O': toggleOverview(); e.preventDefault(); break;
+    }
+  });
+  stage.addEventListener('click',function(e){
+    if(e.target.closest('a,button')) return;
+    if(window.getSelection&&String(window.getSelection())) return;
+    next();
+  });
+  document.getElementById('prevBtn').addEventListener('click',function(e){e.stopPropagation();prev();});
+  document.getElementById('nextBtn').addEventListener('click',function(e){e.stopPropagation();next();});
+  document.getElementById('ovBtn').addEventListener('click',function(e){e.stopPropagation();toggleOverview();});
+  var tx=null,ty=null;
+  addEventListener('touchstart',function(e){ var t=e.changedTouches[0]; tx=t.clientX; ty=t.clientY; },{passive:true});
+  addEventListener('touchend',function(e){
+    if(tx===null) return; var t=e.changedTouches[0], dx=t.clientX-tx, dy=t.clientY-ty; tx=null;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){ if(dx<0) next(); else prev(); }
+  },{passive:true});
+
+  go(fromHash(),1);
+
+  /* ---------- presenter chrome auto-hide (2s idle) ---------- */
+  var idleT=null;
+  function wake(){ document.body.classList.remove('idle'); clearTimeout(idleT); idleT=setTimeout(function(){ document.body.classList.add('idle'); },2000); }
+  addEventListener('mousemove',wake,{passive:true});
+  addEventListener('touchstart',wake,{passive:true});
+  wake();
+
+  /* ---------- self-check (?check): layout overflow + JS errors ---------- */
+  if(/[?&]check\b/.test(params)){
+    var report={slides:n,errors:errs,overflow:[],tight:[],pulses:[],fonts:[],colOverflow:[],boxOverflow:[],paren:{checked:0,skippedPairs:0,fail:[]},small:[],bidi:[]};
+    function desc(el){ return el.tagName.toLowerCase()+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).join('.'):''); }
+    function run(){
+      fitCode();
+      slides.forEach(function(s,idx){
+        /* parenthesis rule: for every text node matching /\d+\)/ the ")" must sit to the RIGHT of its digit
+           (a ")" that closes an earlier "(" in the same node is an RTL bracket pair and is skipped) */
+        (function(){ var w=document.createTreeWalker(s,NodeFilter.SHOW_TEXT),t; while((t=w.nextNode())){ var txt=t.textContent; if(!/\d\)/.test(txt)) continue; var re=/\d\)/g,m; while((m=re.exec(txt))){ var i=m.index, before=txt.slice(0,i); var open=(before.match(/\(/g)||[]).length, close=(before.match(/\)/g)||[]).length; if(open>close){ report.paren.skippedPairs++; continue; } var r1=document.createRange(); r1.setStart(t,i); r1.setEnd(t,i+1); var r2=document.createRange(); r2.setStart(t,i+1); r2.setEnd(t,i+2); var a=r1.getBoundingClientRect(), b=r2.getBoundingClientRect(); if(a.width===0&&b.width===0) continue; report.paren.checked++; if(!(b.left>a.left)) report.paren.fail.push({slide:idx+1,text:txt.trim().slice(0,40),parent:desc(t.parentNode)}); } } })();
+        /* content wider/taller than its own box (clipped or spilling text), for every non-inline element */
+        s.querySelectorAll('*').forEach(function(el){
+          if(el.closest('svg')||el===s||el.classList.contains('pipe')||el.classList.contains('line')) return;
+          var cs=getComputedStyle(el); if(cs.display==='inline'||cs.display==='none'||cs.display==='contents') return;
+          var dx=el.scrollWidth-el.clientWidth, dy=el.scrollHeight-el.clientHeight;
+          if(dx>1||dy>1) report.boxOverflow.push({slide:idx+1,el:desc(el),dx:dx,dy:dy,text:(el.textContent||'').trim().slice(0,30)});
+        });
+        s.querySelectorAll('pre.code').forEach(function(p){ var f=parseFloat(getComputedStyle(p).fontSize); if(f<27) report.fonts.push({slide:idx+1,fs:f}); });
+        /* readability floor: every visible text node outside code blocks must be >= 24px (+ the kicker/footer pseudo-elements) */
+        ['::before','::after'].forEach(function(ps){ var c=getComputedStyle(s,ps); if(c.content&&c.content!=='none'&&c.content!=='""'&&parseFloat(c.fontSize)<24) report.small.push({slide:idx+1,el:'section'+ps,fs:parseFloat(c.fontSize)}); });
+        (function(){ var w=document.createTreeWalker(s,NodeFilter.SHOW_TEXT),t; while((t=w.nextNode())){ var txt=t.textContent.trim(); if(!txt) continue; var el=t.parentNode; if(el.closest('pre.code,svg,#audit')) continue; var cs=getComputedStyle(el); if(cs.display==='none') continue; var f=parseFloat(cs.fontSize); if(f<24) report.small.push({slide:idx+1,el:desc(el),fs:f,text:txt.slice(0,30)});
+          /* bidi: code-like call tokens or unbalanced parentheses in Arabic (RTL) text that is not isolated as LTR */
+          if(cs.direction==='rtl' && !el.closest('bdi[dir=ltr],.ic,.en,.mono,.tag,code,.chips span,.f,h4,.it,.ob,.sv,.tree')){ var full=t.textContent; if(/[A-Za-z_]\w*\(\)/.test(full)) report.bidi.push({slide:idx+1,why:'call-token',text:txt.slice(0,40)}); var o=(full.match(/\(/g)||[]).length,c2=(full.match(/\)/g)||[]).length; if(o!==c2) report.bidi.push({slide:idx+1,why:'unbalanced-paren',text:txt.slice(0,40)}); } } })();
+        s.querySelectorAll('.ic, .run code').forEach(function(ic){
+          var col=ic.closest('.col, .card, .ex li, .recap li, .run, .sub'); if(!col) return;
+          var a=ic.getBoundingClientRect(), b=col.getBoundingClientRect();
+          if(a.left<b.left-1||a.right>b.right+1) report.colOverflow.push({slide:idx+1,text:ic.textContent.slice(0,40),by:Math.round(Math.max(b.left-a.left,a.right-b.right))});
+        });
+        slides.forEach(function(o){ o.classList.remove('active','leaving'); });
+        s.classList.add('active');
+        var r=s.getBoundingClientRect();
+        s.querySelectorAll('*').forEach(function(el){
+          if(el.closest('svg')&&el.tagName!=='svg') return;
+          var b=el.getBoundingClientRect(); if(b.width<2||b.height<2) return;
+          var tag=el.tagName.toLowerCase()+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).join('.'):'');
+          if(b.right>r.right+1||b.left<r.left-1||b.bottom>r.bottom+1||b.top<r.top-1)
+            report.overflow.push({slide:idx+1,el:tag,dx:Math.round(Math.max(b.right-r.right,r.left-b.left)),dy:Math.round(Math.max(b.bottom-r.bottom,r.top-b.top))});
+          else if(b.bottom>r.bottom-40 && !el.closest('.run') && el.tagName!=='SECTION' && !el.classList.contains('tipbar'))
+            report.tight.push({slide:idx+1,el:tag,gap:Math.round(r.bottom-b.bottom)});
+        });
+        s.querySelectorAll('pre.code code').forEach(function(c){
+          if(c.scrollWidth>c.clientWidth+1) report.overflow.push({slide:idx+1,el:'code-h',dx:c.scrollWidth-c.clientWidth});
+        });
+        s.querySelectorAll('.rp .pulse').forEach(function(p){
+          p.style.offsetDistance='100%'; p.style.opacity='1';
+          var b=p.getBoundingClientRect(), d=p.parentNode.getBoundingClientRect();
+          report.pulses.push({slide:idx+1,cls:p.className,x:Math.round((b.left+b.width/2-d.left)/(d.width/940)),y:Math.round((b.top+b.height/2-d.top)/(d.height/760))});
+          p.style.offsetDistance=''; p.style.opacity='';
+        });
+      });
+      slides.forEach(function(o){ o.classList.remove('active'); });
+      slides[cur].classList.add('active');
+      // dedupe tight by slide
+      var seen={}; report.tight=report.tight.filter(function(t){ var k=t.slide+t.el; if(seen[k]) return false; seen[k]=1; return true; });
+      document.getElementById('audit').textContent=JSON.stringify(report);
+      document.title='AUDIT_DONE';
+    }
+    if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(run,100); }); else setTimeout(run,500);
+  }
+})();
+</script>
+</body>
+</html>

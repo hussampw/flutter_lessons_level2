@@ -1,0 +1,148 @@
+# ============================================================
+# الدرس 9 (Release): CI/CD مع GitHub Actions
+# في التطبيق: القائمة ← الدرس 9  ·  في العرض: شرائح الدرس 9
+# ============================================================
+#
+# مع كل push أو Pull Request:
+#   1) test:  flutter analyze + flutter test     (يمنع دمج كود مكسور)
+#   2) build: APK + App Bundle موقّعان + ملفات الرموز (symbols) كـ artifacts
+#
+# ⚠️ GitHub يقرأ هذا الملف من .github/workflows/ في جذر المستودع:
+#    إذا كان مشروع Flutter هو جذر المستودع فانسخه كما هو.
+#
+# الأسرار (GitHub ← Settings ← Secrets and variables ← Actions):
+#   ANDROID_KEYSTORE_BASE64   ← base64 -w0 upload-keystore.jks
+#   ANDROID_KEYSTORE_PASSWORD · ANDROID_KEY_PASSWORD · ANDROID_KEY_ALIAS
+#   PROD_CONFIG_JSON          ← محتوى config/prod.json (الدرس 7)
+# بدون الأسرار يعمل البناء أيضاً (توقيع debug) — مناسب للتجربة فقط.
+
+name: Flutter CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # زر "Run workflow" يدوياً
+
+# push جديد على نفس الفرع يلغي التشغيل القديم (توفير دقائق CI)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: analyze + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9 # نفس نسخة الورشة: لا مفاجآت
+          channel: stable
+          cache: true # يحفظ Flutter SDK و pub-cache بين التشغيلات
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  build-android:
+    name: build apk + appbundle
+    needs: test # لا نبني إلا إذا نجحت الاختبارات
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+
+      # كاش Gradle: يختصر البناء من ~8 دقائق إلى ~3
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle.kts', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # التوقيع: ننشئ ملف المفتاح و key.properties من الأسرار (الدرس 8)
+      - name: Prepare signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No keystore secret: using debug signing"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          {
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "storeFile=upload-keystore.jks"
+          } > android/key.properties
+
+      # إعدادات الإنتاج (الدرس 7): من سرّ، أو المثال إن لم يوجد
+      - name: Prepare config
+        env:
+          PROD_CONFIG_JSON: ${{ secrets.PROD_CONFIG_JSON }}
+        run: |
+          if [ -n "$PROD_CONFIG_JSON" ]; then
+            echo "$PROD_CONFIG_JSON" > config/prod.json
+          else
+            cp config/prod.example.json config/prod.json
+          fi
+
+      # رقم البناء = رقم التشغيل في CI ← versionCode يزيد تلقائياً مع كل بناء
+      - name: Build APK
+        run: >
+          flutter build apk --release --flavor prod
+          --obfuscate --split-debug-info=build/symbols
+          --dart-define-from-file=config/prod.json
+          --build-number=${{ github.run_number }}
+
+      - name: Build App Bundle
+        run: >
+          flutter build appbundle --release --flavor prod
+          --obfuscate --split-debug-info=build/symbols
+          --dart-define-from-file=config/prod.json
+          --build-number=${{ github.run_number }}
+
+      # النتائج قابلة للتحميل من صفحة التشغيل (Actions ← Artifacts)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release-${{ github.run_number }}
+          path: |
+            build/app/outputs/flutter-apk/app-prod-release.apk
+            build/app/outputs/bundle/prodRelease/app-prod-release.aab
+
+      # احفظ الرموز دائماً: بدونها لا يمكن قراءة أعطال النسخة المشوّشة
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols-${{ github.run_number }}
+          path: build/symbols
+
+      # (اختياري) الرفع إلى Google Play — مسار الاختبار الداخلي
+      # يحتاج Service Account من Play Console ← Setup ← API access
+      # - uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+      #     packageName: com.workshop.day5_examples
+      #     releaseFiles: build/app/outputs/bundle/prodRelease/app-prod-release.aab
+      #     track: internal
+
+# iOS: يحتاج runs-on: macos-latest + شهادات Apple (أسهل مع Codemagic أو fastlane match)
+#   flutter build ipa --release --flavor prod --export-options-plist=ios/ExportOptions.plist

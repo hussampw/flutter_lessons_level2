@@ -1,0 +1,15 @@
+# ============================================================
+# الدرس 8: مثال لملف التوقيع — انسخه إلى android/key.properties
+#   cp android/key.properties.example android/key.properties
+# ⚠️ key.properties و ملف .jks موجودان في android/.gitignore — لا ترفعهما أبداً
+#    احفظ نسخة احتياطية من المفتاح وكلمات المرور في مكان آمن:
+#    فقدان المفتاح = لا يمكنك تحديث التطبيق (إلا مع Play App Signing)
+#
+# إنشاء المفتاح مرة واحدة (keytool يأتي مع JDK):
+#   keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA \
+#     -keysize 2048 -validity 10000 -alias upload
+# ============================================================
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=upload
+storeFile=/home/USER/upload-keystore.jks

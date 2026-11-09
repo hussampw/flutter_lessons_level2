@@ -1,0 +1,38 @@
+name: day5_examples
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  crypto: ^3.0.8
+  dio: ^5.11.1
+  firebase_core: ^5.1.0
+  firebase_crashlytics: ^6.0.1
+  firebase_messaging: ^17.0.1
+  flutter:
+    sdk: flutter
+  flutter_local_notifications: ^23.0.0
+  flutter_riverpod: ^3.5.0
+  geolocator: ^14.1.2
+  image_picker: ^1.2.4
+  permission_handler: ^13.0.2
+  timezone: ^0.11.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  pigeon: ^29.1.1
+
+flutter:
+  uses-material-design: true
+
+  # الدرس 8: flutter run بدون --flavor يستخدم dev (Android: productFlavors · iOS: scheme dev)
+  default-flavor: dev
+
+  # الدرس 3: صورة كبيرة (4000×3000) حجم ملفها 240KB فقط — لكنها 48MB في الذاكرة!
+  assets:
+    - assets/images/

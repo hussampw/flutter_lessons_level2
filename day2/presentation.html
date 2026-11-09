@@ -1,0 +1,1766 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورشة Flutter المتقدمة — اليوم الثاني</title>
+<meta name="description" content="عرض اليوم الثاني: go_router + Dio + درسا Dart (Records و Sealed، freezed) — يطابق أمثلة day2_examples/lib/lessons">
+<link href="../assets/fonts/fonts.css" rel="stylesheet"><!-- خطوط محلية: يعمل العرض بدون إنترنت -->
+<style>
+/* ============================================================
+   Identity: Dart/Flutter navy + sky, amber for "run" cues
+   ============================================================ */
+:root{
+  --bg:#061A2E; --bg2:#0B2A47; --card:#0E3156; --code:#04111F;
+  --ink:#F3F7FB; --muted:#9FB3C8; --sky:#54C5F8; --blue:#13B9FD; --deep:#0175C2;
+  --amber:#FFC108; --teal:#2EE6A6; --rose:#FF6B81;
+  --sans:'Tajawal',system-ui,sans-serif; --mono:'JetBrains Mono','Fira Code',monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+code{font-family:var(--mono)}
+
+/* ---------- stage (16:9, scaled to fit) ---------- */
+#stage{position:absolute;top:0;left:0;width:1920px;height:1080px;transform-origin:0 0;overflow:hidden;background:var(--bg);
+  --enter:-80px;--leave:80px}
+#stage.back{--enter:80px;--leave:-80px}
+#stage::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1.2px,transparent 1.2px);background-size:40px 40px;pointer-events:none}
+.bgshape{position:absolute;pointer-events:none}
+.bg1{left:-160px;bottom:-140px;width:680px;height:680px;background:linear-gradient(135deg,rgba(84,197,248,.18),rgba(1,117,194,.04));clip-path:polygon(0 100%,100% 0,100% 42%,42% 100%)}
+.bg2{left:150px;bottom:-230px;width:460px;height:460px;background:rgba(19,185,253,.10);clip-path:polygon(0 100%,100% 0,100% 46%,46% 100%)}
+.bg3{right:-120px;top:-160px;width:420px;height:420px;background:radial-gradient(circle at 50% 50%,rgba(84,197,248,.16),transparent 65%)}
+
+/* ---------- slides & transitions (RTL: next enters from the left) ---------- */
+.slide{position:absolute;inset:0;padding:90px 88px 64px;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transform:translateX(var(--enter));pointer-events:none;
+  transition:opacity .55s var(--ease),transform .55s var(--ease),visibility 0s linear .55s}
+.slide.active{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition-delay:0s}
+.slide.leaving{transform:translateX(var(--leave))}
+.slide::before{content:attr(data-kicker);position:absolute;top:34px;right:88px;font-size:24px;font-weight:700;color:var(--sky);letter-spacing:.2px}
+.slide::after{content:'ورشة Flutter المتقدمة · اليوم الثاني';position:absolute;bottom:26px;right:88px;font-size:22px;font-weight:500;color:#C9D6E3}
+
+/* ---------- staggered entrance ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.slide.active .a{animation:rise .7s var(--ease) both;animation-delay:calc(var(--i,0)*90ms + 120ms)}
+.slide.active .ln{animation:rise .45s var(--ease) both;animation-delay:calc(var(--pi,0)*90ms + var(--i,0)*38ms + 260ms)}
+
+/* ---------- typography ---------- */
+h1,h2,h3{margin:0;font-weight:800;line-height:1.2}
+h2{font-size:60px;margin-bottom:24px}
+h2 .en{font-family:var(--mono);font-weight:600;font-size:.78em;color:var(--sky);direction:ltr;unicode-bidi:isolate}
+.body{flex:1;min-height:0;display:flex;flex-direction:column}
+.cols{display:flex;gap:44px;flex:1;min-height:0;align-items:flex-start}
+.col{min-width:0}
+.col.text{flex:1}
+.col.code{flex:1.5}
+.cols.wide .col.code{flex:2}
+.cols.even .col.code{flex:1}
+.cols.diagram .col.text{flex:1.15}
+.cols.diagram .col.dia{flex:1;align-self:stretch}
+.cols.diagram.wd .col.text{flex:1}
+.cols.diagram.wd .col.dia{flex:1.25}
+.lead{font-size:34px;line-height:1.5;margin:0 0 22px;color:var(--ink)}
+.lead b{color:var(--sky)}
+ul.bul{list-style:none;margin:0;padding:0}
+ul.bul li{position:relative;font-size:32px;line-height:1.45;padding-right:40px;margin-bottom:16px}
+ul.bul li::before{content:'';position:absolute;right:6px;top:.62em;width:16px;height:16px;border-radius:5px;background:var(--sky);transform:rotate(45deg) scale(.9)}
+ul.bul li b{color:var(--sky);font-weight:700}
+ul.bul.tight li{font-size:30px;margin-bottom:12px}
+.ic{font-family:var(--mono);font-size:.86em;background:rgba(84,197,248,.12);border:1px solid rgba(84,197,248,.25);border-radius:8px;padding:1px 10px;margin:0 4px;direction:ltr;unicode-bidi:isolate;color:#CFE6FF;white-space:nowrap}
+.muted{color:var(--muted)}
+.note{font-size:28px;line-height:1.5;color:var(--muted);margin-top:12px}
+
+/* callouts */
+.warn,.tip,.key{border-radius:18px;padding:16px 22px;font-size:29px;line-height:1.45;margin-top:14px;border:1px solid}
+.warn{background:rgba(255,107,129,.10);border-color:rgba(255,107,129,.45)}
+.tip{background:rgba(46,230,166,.09);border-color:rgba(46,230,166,.4)}
+.key{background:rgba(255,193,8,.09);border-color:rgba(255,193,8,.45)}
+.warn b,.tip b,.key b{font-weight:800}
+.warn b{color:var(--rose)} .tip b{color:var(--teal)} .key b{color:var(--amber)}
+
+/* ---------- code blocks ---------- */
+pre.code{position:relative;margin:0;direction:ltr;text-align:left;background:var(--code);border:1px solid rgba(84,197,248,.24);
+  border-radius:20px;padding:46px 22px 20px;font:500 27px/1.36 var(--mono);color:#E6EEF7;overflow:hidden;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.35)}
+pre.code.sm{font-size:25px;padding-top:42px}
+pre.code::before{content:attr(data-file);position:absolute;top:0;right:0;font:500 19px/1 var(--mono);color:var(--muted);padding:10px 16px;background:rgba(255,255,255,.05);border-radius:0 19px 0 12px}
+pre.code::after{content:'';position:absolute;top:14px;left:18px;width:12px;height:12px;border-radius:50%;background:var(--rose);box-shadow:20px 0 0 var(--amber),40px 0 0 var(--teal)}
+pre.code code{display:block;white-space:pre}
+.ln{display:block;white-space:pre;min-height:1.36em}
+.kw{color:#FF8FB8}.ty{color:#8BE9FD}.st{color:#C3E88D}.nu{color:#FFD166}.cm{color:#AFC1D4;font-style:italic}.an{color:#FFC108}.fn{color:#D8EAFF}.ip{color:#FFD166}
+.cm[dir=rtl],.st[dir=rtl]{unicode-bidi:isolate}
+.ip{direction:ltr;unicode-bidi:isolate}
+.stack{display:flex;flex-direction:column;gap:18px;width:100%}
+
+/* run cue */
+.run{margin-top:auto;display:flex;align-items:center;gap:26px;align-self:flex-start;background:rgba(255,193,8,.10);border:1.5px solid rgba(255,193,8,.55);border-radius:16px;padding:12px 22px;font-size:29px}
+.run .lbl{font-weight:800;color:var(--amber);white-space:nowrap}
+.run .lbl::before{content:'▶';display:inline-block;margin-left:10px;font-size:.8em}
+.run code{direction:ltr;unicode-bidi:isolate;font-size:.92em;background:rgba(0,0,0,.35);padding:6px 14px;border-radius:10px;color:#FFE08A}
+.run .menu{color:#C9D6E3;font-size:1em;border-right:2px solid rgba(255,193,8,.4);padding-right:24px}
+.run .menu .ic{font-size:.9em}
+.body + .run{margin-top:22px}
+
+/* tables */
+table.tbl{width:100%;border-collapse:collapse;font-size:29px;line-height:1.4}
+table.tbl th{background:rgba(84,197,248,.14);color:var(--sky);font-weight:800;text-align:right;padding:14px 20px;border-bottom:2px solid rgba(84,197,248,.4)}
+table.tbl td{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.09);vertical-align:top}
+table.tbl tr:last-child td{border-bottom:0}
+table.tbl td.mono{font-family:var(--mono);direction:ltr;text-align:left;color:#CFE6FF;font-size:26px}
+table.tbl th.l{text-align:left;direction:ltr}
+table.tbl td b{color:var(--sky)}
+table.tbl .ok{color:var(--teal);font-weight:800} table.tbl .no{color:var(--rose);font-weight:800}
+
+/* chips / cards */
+.chips{display:flex;flex-wrap:wrap;gap:12px}
+.chips span{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-size:24px;padding:8px 18px;border-radius:999px;border:1px solid rgba(84,197,248,.4);background:rgba(84,197,248,.08);color:#CFE6FF}
+.cards{display:grid;gap:22px}
+.cards.two{grid-template-columns:1fr 1fr}
+.cards.three{grid-template-columns:1fr 1fr 1fr}
+.card{background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:20px;padding:22px 26px}
+.card h3{font-size:32px;color:var(--sky);margin-bottom:12px}
+.card h3 .ic{font-size:.8em}
+.card p,.card li{font-size:28px;line-height:1.45;margin:0}
+.card ol,.card ul{margin:0;padding-right:28px}
+.card li{margin-bottom:8px}
+
+/* agenda */
+.agenda{display:grid;grid-template-columns:1fr 1fr;gap:30px;flex:1}
+.agenda .part{background:rgba(255,255,255,.035);border:1px solid rgba(84,197,248,.25);border-radius:24px;padding:26px 30px}
+.agenda h3{font-size:38px;color:var(--sky);margin-bottom:16px;display:flex;align-items:center;gap:14px}
+.agenda h3 .tag{font-family:var(--mono);font-size:24px;background:var(--deep);color:#fff;border-radius:10px;padding:4px 12px;direction:ltr}
+.agenda ol{margin:0;padding-right:34px;font-size:30px;line-height:1.55}
+.agenda li span{color:var(--muted);font-size:.85em}
+
+/* title + divider */
+.slide.title,.slide.divider{justify-content:center;align-items:flex-start}
+.slide.title::before,.slide.divider::before{content:none}
+.slide.title .kick,.slide.divider .kick{font-size:30px;color:var(--sky);font-weight:700;margin-bottom:18px}
+.slide.title h1{font-size:118px;letter-spacing:-.5px;margin-bottom:10px}
+.slide.title h1 .en{font-family:var(--mono);font-weight:600;color:var(--sky);direction:ltr;unicode-bidi:isolate;font-size:.9em}
+.slide.title h2{font-size:52px;font-weight:500;color:var(--muted);margin-bottom:44px}
+.slide.title .hint{margin-top:40px;color:var(--muted);font-size:26px}
+.slide.divider h1{font-size:120px}
+.slide.divider .big{font-size:64px;color:var(--sky);font-weight:800;margin-bottom:14px}
+.slide.divider .sub{font-size:34px;color:var(--muted);margin-top:16px;max-width:1300px;line-height:1.5}
+.mark{position:relative;width:150px;height:150px;margin-bottom:34px}
+.mark i{position:absolute;display:block}
+.mark .m1{left:0;top:0;width:150px;height:150px;background:var(--sky);clip-path:polygon(0 58%,58% 0,100% 0,0 100%)}
+.mark .m2{left:0;top:0;width:150px;height:150px;background:var(--deep);clip-path:polygon(42% 100%,100% 42%,100% 72%,72% 100%)}
+.mark .m3{left:0;top:0;width:150px;height:150px;background:#042B59;clip-path:polygon(42% 100%,57% 85%,72% 100%)}
+
+/* recap, exercises */
+.recap{display:grid;grid-template-columns:1fr 1fr;gap:34px;flex:1}
+.recap .part h3{font-size:34px;color:var(--sky);margin-bottom:14px}
+.recap ul{list-style:none;margin:0;padding:0}
+.recap li{font-size:28px;line-height:1.45;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.recap li b{color:var(--ink);font-weight:800}
+.recap li .ic{font-size:.82em}
+.ex{counter-reset:ex;list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:18px 26px}
+.ex li{counter-increment:ex;position:relative;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:18px;padding:18px 84px 18px 22px;font-size:28px;line-height:1.45}
+.ex li::before{content:counter(ex);position:absolute;right:20px;top:16px;width:46px;height:46px;border-radius:12px;background:var(--amber);color:#042B59;font-weight:800;font-size:28px;display:flex;align-items:center;justify-content:center}
+.ex li.wide{grid-column:1/-1}
+
+/* day 2 preview */
+.next{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:10px}
+.next .card h3{font-size:40px}
+.next .card li{font-size:29px}
+
+/* timing bars (slide 5) */
+.bars{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+.bars .bar span{display:block;font-size:27px;margin-bottom:6px;color:var(--muted)}
+.bars .bar i{display:block;width:var(--w);font-style:normal;font-family:var(--mono);font-size:24px;padding:8px 16px;border-radius:10px;background:linear-gradient(90deg,var(--deep),var(--sky));color:#042B59;font-weight:600;direction:ltr;text-align:left;transform-origin:right}
+.slide.active .bars .bar i{animation:grow .9s var(--ease) both;animation-delay:calc(var(--i,0)*90ms + 500ms)}
+@keyframes grow{from{transform:scaleX(0)}to{transform:none}}
+
+/* layer stack (DI) */
+.layers{display:flex;flex-direction:column;gap:10px}
+.layers .ly{background:var(--card);border:1.5px solid rgba(84,197,248,.4);border-radius:14px;padding:12px 18px;font-size:27px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.layers .ly code{color:#CFE6FF;font-size:24px;direction:ltr}
+.layers .arrow{text-align:center;color:var(--sky);font-size:26px;line-height:1}
+
+/* class-modifier mini table */
+.mods{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:center;font-size:28px}
+.mods code{font-size:26px;color:var(--amber);direction:ltr}
+
+/* ============================================================
+   Diagrams (base CSS = final state; .play adds motion)
+   ============================================================ */
+.diagram{position:relative;width:100%;height:100%}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes dim{from{opacity:1}to{opacity:.3}}
+
+/* 1) event loop */
+.el{display:flex;flex-direction:column;gap:6px}
+.el .lane{display:flex;align-items:center;gap:22px;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.25);border-radius:16px;padding:10px 20px;min-height:86px}
+.el .lane.ev{border-color:rgba(255,193,8,.4)}
+.el .lt{width:330px;flex:none;font-size:25px;color:var(--sky);font-weight:700;line-height:1.2}
+.el .lt small{display:block;font:500 19px/1.3 var(--sans);color:#C9D6E3;margin-top:4px}
+.el .lane.ev .lt{color:var(--amber)}
+.el .chips{gap:10px}
+.el .chip{font:700 27px/1 var(--mono);background:var(--deep);color:#fff;padding:13px 18px;border-radius:12px;border:0}
+.el .lane.ev .chip{background:#8a6400}
+.el .larrow{display:flex;align-items:center;gap:14px;padding:0 44px;color:var(--amber);font-size:20px;line-height:1.2}
+.el .larrow i{font-style:normal;font-size:34px;line-height:1}
+.el .larrow b{font-weight:800}
+.el .console{flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:8px;background:var(--code);border-radius:16px;padding:10px 22px;font:500 26px/1.45 var(--mono);direction:ltr;text-align:left;border:1px solid rgba(84,197,248,.2)}
+.el .console .ct{color:#C9D6E3;font-family:var(--sans);direction:rtl;text-align:right;font-size:22px;margin-bottom:4px}
+.el .o{color:#C3E88D;unicode-bidi:isolate} .el .o.ev{color:#FFD166}
+.play.el .chip{animation:pop .4s both var(--d),dim .5s forwards var(--dc)}
+.play.el .o{animation:fadein .35s both var(--d)}
+
+/* 4) riverpod graph (fixed 900x640 coordinate space) */
+.rp{width:940px;height:760px}
+.rp .scope{position:absolute;left:0;right:0;top:0;height:470px;border:2px dashed rgba(84,197,248,.65);border-radius:26px}
+.rp .scope-title{position:absolute;top:-22px;right:34px;background:var(--bg);padding:0 14px;color:var(--sky);font:800 27px var(--sans)}
+.rp .scope-title code{color:var(--sky)}
+.rp .node,.rp .wnode{position:absolute;background:var(--card);border:2px solid var(--sky);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 12px}
+.rp .node{width:300px;height:130px}
+.rp .node b,.rp .wnode b{font:700 27px var(--mono);direction:ltr;unicode-bidi:isolate;color:var(--ink)}
+.rp .node small,.rp .wnode small{font:500 23px/1.3 var(--sans);color:#D5E1EC;text-align:center}
+.rp .wnode small{font-family:var(--mono);direction:ltr;unicode-bidi:isolate;font-size:20px}
+.rp .p1{top:90px;right:50px}
+.rp .p2{top:90px;left:50px}
+.rp .p3{top:300px;left:300px;width:340px;border-color:var(--teal)}
+.rp .wnode{top:550px;width:430px;height:150px;border-color:rgba(255,255,255,.45)}
+.rp .w1{right:30px}
+.rp .w2{left:30px}
+.rp .flag{position:absolute;top:-18px;left:16px;background:var(--amber);color:#042B59;font:800 20px var(--sans);padding:3px 12px;border-radius:999px;opacity:0}
+.rp svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.rp svg line,.rp svg path{stroke:rgba(255,255,255,.45);stroke-width:3;fill:none;marker-start:url(#dot);marker-end:url(#arr)}
+.rp svg text{fill:#C9D6E3;font:600 20px var(--mono);direction:ltr;text-anchor:start}
+.rp .pulse{position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--amber);box-shadow:0 0 18px var(--amber);opacity:0;offset-rotate:0deg}
+.rp .pu1{offset-path:path('M245 550 L160 220')}
+.rp .pu2{offset-path:path('M300 220 L380 300')}
+.rp .pu3{offset-path:path('M470 430 L695 550')}
+.play.rp .pulse{animation:travel .8s linear both;animation-delay:var(--d)}
+.play.rp .flash{animation:flash 1s both var(--d)}
+.play.rp .flag{animation:flagin 1.4s both var(--d)}
+@keyframes travel{0%{offset-distance:0%;opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+@keyframes flash{0%{box-shadow:none}30%{box-shadow:0 0 0 5px var(--amber),0 0 40px var(--amber)}100%{box-shadow:none}}
+@keyframes flagin{0%{opacity:0;transform:translateY(8px)}20%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+
+/* 5) autoDispose */
+.ad{display:flex;gap:26px}
+.ad .screens{display:flex;flex-direction:column;align-items:center;gap:8px;width:330px}
+.ad .scr{width:300px;border:3px solid rgba(255,255,255,.28);border-radius:20px;overflow:hidden;background:#0d2440}
+.ad .bar{background:var(--deep);padding:7px 12px;font:700 20px var(--mono);direction:ltr;text-align:left;white-space:nowrap}
+.ad .scr ul{list-style:none;margin:0;padding:8px 14px;font-size:24px}
+.ad .scr li{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.ad .scr li.hi{color:var(--sky);font-weight:700}
+.ad .scr .bd{padding:14px;font-size:24px;line-height:1.5;text-align:center}
+.ad .nav{display:flex;gap:26px;font-size:24px;color:#C9D6E3;font-weight:700}
+.ad .nav span{padding:4px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2)}
+.ad .store{flex:1;border:2px dashed rgba(84,197,248,.65);border-radius:24px;padding:36px 22px 22px;position:relative;display:flex;flex-direction:column;gap:18px;justify-content:center}
+.ad .stt{position:absolute;top:-20px;right:28px;background:var(--bg);padding:0 12px;color:var(--sky);font-weight:800;font-size:25px}
+.ad .pv{background:var(--card);border:2px solid var(--sky);border-radius:16px;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ad .pv b{font:700 25px var(--mono);direction:ltr;unicode-bidi:isolate;flex-basis:100%;color:var(--ink)}
+.ad .s{font-size:24px;padding:5px 14px;border-radius:999px;background:rgba(255,255,255,.08)}
+.ad .s.drop{background:rgba(255,107,129,.15)} .ad .s.keep{background:rgba(255,193,8,.15)} .ad .s.create{background:rgba(46,230,166,.15)}
+.ad .log{font:500 27px/1.5 var(--mono);direction:ltr;text-align:left;color:#C9D6E3;background:var(--code);border-radius:12px;padding:12px 16px}
+.play.ad .s1{animation:scrA 9s both}
+.play.ad .s2{animation:scrB 9s both}
+.play.ad .push{animation:navP 9s both} .play.ad .pop{animation:navQ 9s both}
+.play.ad .pv1{animation:life1 9s both} .play.ad .pv2{animation:life2 9s both}
+.play.ad .s{opacity:0}
+.play.ad .s.c1{animation:chipA 9s both} .play.ad .s.k1{animation:chipK 9s both}
+.play.ad .s.d2{animation:chipD2 9s both} .play.ad .s.d1{animation:chipD1 9s both}
+@keyframes scrA{0%,12%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}16%,40%{border-color:rgba(255,255,255,.28);box-shadow:none}44%,100%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}}
+@keyframes scrB{0%,12%{border-color:rgba(255,255,255,.28);box-shadow:none}16%,40%{border-color:var(--sky);box-shadow:0 0 30px rgba(84,197,248,.5)}44%,100%{border-color:rgba(255,255,255,.28);box-shadow:none}}
+@keyframes navP{0%,10%{color:var(--muted)}13%,17%{color:var(--amber);border-color:var(--amber)}22%,100%{color:var(--muted)}}
+@keyframes navQ{0%,38%{color:var(--muted)}41%,45%{color:var(--amber);border-color:var(--amber)}50%,100%{color:var(--muted)}}
+@keyframes life1{0%,15%{opacity:0;transform:translateY(14px)}19%,80%{opacity:1;transform:none}86%,100%{opacity:.18}}
+@keyframes life2{0%,15%{opacity:0;transform:translateY(14px)}19%,46%{opacity:1;transform:none}52%,100%{opacity:.18}}
+@keyframes chipA{0%,17%{opacity:0}21%,100%{opacity:1}}
+@keyframes chipK{0%,47%{opacity:0}51%,100%{opacity:1}}
+@keyframes chipD2{0%,47%{opacity:0}51%,100%{opacity:1}}
+@keyframes chipD1{0%,81%{opacity:0}85%,100%{opacity:1}}
+
+
+/* ---------- v2: lesson header + Dart/Riverpod tags ---------- */
+.lh{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.lh .num{width:50px;height:50px;border-radius:14px;background:var(--sky);color:#042B59;font:800 30px var(--mono);display:flex;align-items:center;justify-content:center;flex:none}
+.lh .lt{font-size:30px;font-weight:700;color:var(--sky)}
+.tag{font:700 21px var(--mono);padding:3px 14px;border-radius:999px;border:1.5px solid;direction:ltr;unicode-bidi:isolate;vertical-align:middle}
+.tag.dart{color:var(--amber);border-color:var(--amber)}
+.tag.riv{color:var(--teal);border-color:var(--teal)}
+/* agenda lesson cards */
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
+.lcard{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.04);border:1px solid rgba(84,197,248,.22);border-radius:16px;padding:12px 18px;min-width:0}
+.lcard .num{width:48px;height:48px;border-radius:12px;background:var(--deep);color:#fff;font:800 28px var(--mono);display:flex;align-items:center;justify-content:center;flex:none}
+.lcard.dart .num{background:var(--amber);color:#042B59}
+.lcard .t{font-size:30px;font-weight:700;flex:1;min-width:0}
+.lcard .t .tag{font-size:19px;margin-right:10px}
+.lcard .f{font:500 20px var(--mono);color:#C9D6E3;direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+/* tips slides (amber identity, visible in the O overview) */
+.slide.tips::before{color:var(--amber)}
+.slide.tips h2{color:var(--amber)}
+.tipbar{position:absolute;top:0;right:0;bottom:0;width:14px;background:linear-gradient(180deg,var(--amber),rgba(255,193,8,.15))}
+.tiplist{display:flex;flex-direction:column;gap:14px}
+.tipcard{display:flex;gap:20px;align-items:flex-start;background:rgba(255,193,8,.07);border:1px solid rgba(255,193,8,.35);border-radius:18px;padding:14px 20px}
+.tipcard .n{flex:none;width:46px;height:46px;border-radius:50%;background:var(--amber);color:#042B59;font:800 26px var(--mono);display:flex;align-items:center;justify-content:center;margin-top:2px}
+.tipcard .tx{flex:1;min-width:0;font-size:29px;line-height:1.45}
+.tipcard .tx .ic{font-size:.84em}
+.tipcard pre.code{margin-top:10px}
+pre.code.tip{padding:12px 20px 10px;font-size:24px;box-shadow:none;border-color:rgba(255,193,8,.3)}
+pre.code.tip::before,pre.code.tip::after{display:none}
+/* FutureBuilder: rebuild -> new request counter */
+.fb{display:flex;flex-direction:column;gap:16px;justify-content:center}
+.fb .fbbtn{align-self:center;max-width:100%;background:var(--deep);color:#fff;border-radius:14px;padding:10px 24px;font:700 25px var(--sans);display:flex;gap:14px;align-items:center;text-align:center;line-height:1.35}
+.fb .fbbtn code{color:#FFE08A;direction:ltr;unicode-bidi:isolate}
+.fb .fbpanels{display:flex;gap:16px}
+.fb .fbp{flex:1;min-width:0;border-radius:18px;padding:14px 18px;border:2px solid;display:flex;flex-direction:column;gap:10px}
+.fb .fbp.bad{border-color:var(--rose);background:rgba(255,107,129,.08)}
+.fb .fbp.good{border-color:var(--teal);background:rgba(46,230,166,.08)}
+.fb h4{margin:0;font-size:25px;line-height:1.3}
+.fb .reqs{display:flex;gap:8px;font-size:38px;min-height:52px;line-height:1.3}
+.fb .reqs i{font-style:normal}
+.fb .cnt{position:relative;min-height:44px;font-size:26px;font-weight:700}
+.fb .cnt b{position:absolute;right:0;top:0;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.fb .good .cnt b{position:static;display:block}
+.fb .cnt b.c1,.fb .cnt b.c2,.fb .cnt b.c3{opacity:0}
+.play.fb .reqs i{animation:pop .4s both var(--d)}
+.play.fb .fbbtn{animation:btnpulse 1s 4 .3s}
+.play.fb .cnt .c1{animation:kc1 6s both}.play.fb .cnt .c2{animation:kc2 6s both}.play.fb .cnt .c3{animation:kc3 6s both}.play.fb .cnt .c4{animation:kc4 6s both}
+@keyframes btnpulse{0%,100%{box-shadow:none;transform:none}30%{box-shadow:0 0 0 6px rgba(255,193,8,.5);transform:scale(1.04)}}
+@keyframes kc1{0%,9%{opacity:0}10%,25%{opacity:1}26%,100%{opacity:0}}
+@keyframes kc2{0%,25%{opacity:0}26%,42%{opacity:1}43%,100%{opacity:0}}
+@keyframes kc3{0%,42%{opacity:0}43%,59%{opacity:1}60%,100%{opacity:0}}
+@keyframes kc4{0%,59%{opacity:0}60%,100%{opacity:1}}
+.fb .bridge{background:rgba(84,197,248,.1);border:1px solid rgba(84,197,248,.4);border-radius:14px;padding:12px 18px;font-size:27px;line-height:1.45}
+/* ---------- v3 readability (floor 24px) + layout ---------- */
+.slide::before{font-size:26px}
+.slide::after{font-size:24px;color:#D5E1EC}
+.slide.title .hint{font-size:26px;color:#D5E1EC}
+.tag{font-size:23px;padding:4px 16px}
+.lcard .t .tag{font-size:23px}
+.lgrid{gap:22px 26px}
+.lcard{padding:22px 22px}
+.lcard .f{font-size:24px}
+.lcard .t{font-size:32px}
+.el .lt small{font-size:24px;color:#D5E1EC}
+.el .larrow{font-size:25px}
+.el .console .ct{font-size:24px}
+.rp .node small{font-size:25px;color:#E3ECF5}
+.rp .wnode small{font-size:24px;color:#E3ECF5}
+.rp svg text{font-size:24px;fill:#E3ECF5;font-weight:700}
+.rp svg line,.rp svg path{stroke:rgba(255,255,255,.7)}
+.fb h4{font-size:27px}
+.fb .cnt{font-size:27px}
+.fb .fbbtn{font-size:26px}
+.fb .bridge{font-size:30px;line-height:1.5;padding:18px 22px}
+.fb .fbp{padding:18px 20px;gap:14px}
+.fb .reqs{font-size:44px;min-height:60px}
+.fb{gap:22px}
+.next .card h3{font-size:42px;margin-bottom:16px}
+.next .card li{font-size:33px;line-height:1.5;margin-bottom:12px}
+.next .card{padding:28px 32px}
+.tag{font-size:24px}
+.lcard .t .tag{font-size:24px}
+.lcard{min-height:118px}
+bdi[dir=ltr]{font-family:var(--mono);font-weight:600;font-size:.95em}
+.el .larrow bdi[dir=ltr]{color:var(--amber)}
+.el .larrow .n{display:inline-flex;flex:none;width:40px;height:40px;border-radius:50%;background:var(--amber);color:#042B59;font:800 24px var(--mono);align-items:center;justify-content:center}
+.lcard{min-height:136px}
+/* run bar: several chips */
+.run code + code{margin-right:0}
+
+/* ---------- presenter chrome ---------- */
+#progress{position:fixed;top:0;right:0;height:6px;width:0;background:linear-gradient(90deg,var(--deep),var(--sky));z-index:50;transition:width .4s var(--ease)}
+#counter{position:fixed;bottom:14px;left:18px;z-index:50;font:600 16px var(--mono);color:#C9D6E3;direction:ltr;background:rgba(6,26,46,.7);padding:4px 10px;border-radius:8px;letter-spacing:.5px;transition:opacity .4s}
+#nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:50;display:flex;gap:8px;opacity:.35;transition:opacity .3s}
+#nav:hover{opacity:1}
+body.idle #nav,body.idle #counter{opacity:0;pointer-events:none}
+#nav button{background:rgba(6,26,46,.8);border:1px solid rgba(84,197,248,.4);color:var(--sky);width:40px;height:34px;border-radius:8px;font-size:18px;cursor:pointer}
+#overview{position:fixed;inset:0;z-index:100;background:rgba(3,14,26,.96);overflow:auto;padding:28px;display:none}
+#overview.open{display:block}
+#overview .grid{display:grid;gap:18px;grid-template-columns:repeat(5,1fr)}
+#overview .thumb{position:relative;aspect-ratio:16/9;border:2px solid rgba(255,255,255,.15);border-radius:10px;overflow:hidden;cursor:pointer;background:var(--bg);transition:border-color .2s,transform .2s}
+#overview .thumb:hover{border-color:var(--sky);transform:scale(1.03)}
+#overview .thumb.cur{border-color:var(--amber)}
+#overview .thumb .num{position:absolute;bottom:6px;left:8px;z-index:2;font:700 13px var(--mono);color:#fff;background:rgba(0,0,0,.6);padding:2px 7px;border-radius:6px;direction:ltr}
+#overview .thumb .slide{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;opacity:1;visibility:visible;transition:none;pointer-events:none}
+#overview .slide .a,#overview .slide .ln,#overview .diagram *{animation:none!important;opacity:1}
+#overview .slide .flag,#overview .slide .pulse{opacity:0!important}
+#overview .thumb .diagram .s{opacity:1}
+
+/* ---------- static / reduced motion ---------- */
+html.static *,html.static *::before,html.static *::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#audit{display:none}
+/* ============================================================
+   Day 2 additions: tags + 3 diagrams (base CSS = final state; .play adds motion)
+   ============================================================ */
+.tag.gr{color:var(--sky);border-color:var(--sky)}
+.tag.dio{color:var(--teal);border-color:var(--teal)}
+.lgrid.nine{gap:16px 26px}
+.lgrid.nine .lcard{min-height:98px;padding:14px 20px}
+.lgrid.nine .lcard .t{font-size:30px}
+.cols.even .col.text{flex:1}
+
+/* A) one Navigator stack vs StatefulShellRoute branches */
+.ns{display:flex;flex-direction:column;gap:16px}
+.ns .stepbar{position:relative;height:54px}
+.ns .step{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:12px;font-size:27px;font-weight:800;color:var(--amber);background:rgba(255,193,8,.08);border:1px solid rgba(255,193,8,.4);border-radius:14px;opacity:0}
+.ns .step.s3{opacity:1}
+.ns .panels{display:flex;gap:18px}
+.ns .nsp{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;border:1px solid rgba(84,197,248,.28);border-radius:20px;padding:14px 16px;background:rgba(255,255,255,.03)}
+.ns .nst{font-size:27px;font-weight:800;color:var(--sky);line-height:1.25}
+.ns .nst small{display:block;font:500 24px/1.3 var(--sans);color:#D5E1EC}
+.ns .stk{position:relative;height:300px}
+.ns .pg{position:absolute;left:0;right:0;height:78px;border-radius:14px;background:var(--card);border:2px solid var(--sky);font-size:26px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 10px;white-space:nowrap}
+.ns .pg.base{bottom:0;border-color:rgba(255,255,255,.4)}
+.ns .pg.l1{bottom:96px}
+.ns .pg.l2{bottom:192px}
+.ns .pg.lost{border-color:var(--rose);border-style:dashed;color:#FFC2CC}
+.ns .pg.srch{opacity:0;border-color:var(--amber)}
+.ns .brs{display:flex;gap:8px;height:300px}
+.ns .br{flex:1;min-width:0;position:relative;border:2px dashed rgba(255,255,255,.22);border-radius:14px;color:#9FB3C8}
+.ns .br.on{color:var(--ink);border-color:var(--sky);box-shadow:0 0 26px rgba(84,197,248,.35)}
+.ns .br .pg{left:6px;right:6px;font-size:24px;padding:0 4px;border-style:dashed;border-color:rgba(159,179,200,.6)}
+.ns .br.on .pg{border-style:solid;border-color:var(--sky)}
+.ns .br .pg.l1{bottom:6px}
+.ns .br .pg.l2{bottom:102px}
+.ns .tabs{display:flex;gap:8px}
+.ns .tabs span{flex:1;text-align:center;font-size:24px;font-weight:700;padding:6px 0;border-radius:999px;border:1px solid rgba(255,255,255,.22);color:#C9D6E3}
+.ns .tabs span.on{background:var(--deep);border-color:var(--sky);color:#fff}
+.ns .verdict{font-size:25px;font-weight:700;line-height:1.35;border-radius:14px;padding:8px 12px;text-align:center}
+.ns .verdict.bad{background:rgba(255,107,129,.12);border:1px solid rgba(255,107,129,.45)}
+.ns .verdict.good{background:rgba(46,230,166,.10);border:1px solid rgba(46,230,166,.45)}
+.play.ns .step.s1{animation:nsS1 9s both}
+.play.ns .step.s2{animation:nsS2 9s both}
+.play.ns .step.s3{animation:nsS3 9s both}
+.play.ns .p1 .pg.lost{animation:nsPost1 9s both}
+.play.ns .p1 .pg.feed{animation:nsFeed1 9s both}
+.play.ns .p1 .pg.srch{animation:nsSrch1 9s both}
+.play.ns .p2 .pg.post{animation:nsPush 9s both}
+.play.ns .tabs .t0{animation:nsOn0 9s both}
+.play.ns .tabs .t1{animation:nsOn1 9s both}
+.play.ns .br.b0{animation:nsBr0 9s both}
+.play.ns .br.b1{animation:nsBr1 9s both}
+.play.ns .br.b0 .pg.l1{animation:nsPg0 9s both}
+.play.ns .br.b1 .pg{animation:nsPg1 9s both}
+.play.ns .verdict{animation:nsS3 9s both}
+@keyframes nsS1{0%,30%{opacity:1}33%,100%{opacity:0}}
+@keyframes nsS2{0%,30%{opacity:0}33%,62%{opacity:1}65%,100%{opacity:0}}
+@keyframes nsS3{0%,62%{opacity:0}65%,100%{opacity:1}}
+@keyframes nsPost1{0%,6%{opacity:0;transform:translateY(-30px);border-color:var(--sky);border-style:solid;color:var(--ink)}11%,30%{opacity:1;transform:none;border-color:var(--sky);border-style:solid;color:var(--ink)}34%,100%{opacity:1;transform:none;border-color:var(--rose);border-style:dashed;color:#FFC2CC}}
+@keyframes nsFeed1{0%,30%{opacity:1}33%,62%{opacity:0}65%,100%{opacity:1}}
+@keyframes nsSrch1{0%,30%{opacity:0}33%,62%{opacity:1}65%,100%{opacity:0}}
+@keyframes nsPush{0%,6%{opacity:0;transform:translateY(-30px)}11%,100%{opacity:1;transform:none}}
+@keyframes nsOn0{0%,30%{border-color:var(--sky);background:var(--deep);color:#fff}33%,62%{border-color:rgba(255,255,255,.22);background:transparent;color:#C9D6E3}65%,100%{border-color:var(--sky);background:var(--deep);color:#fff}}
+@keyframes nsOn1{0%,30%{border-color:rgba(255,255,255,.22);background:transparent;color:#C9D6E3}33%,62%{border-color:var(--sky);background:var(--deep);color:#fff}65%,100%{border-color:rgba(255,255,255,.22);background:transparent;color:#C9D6E3}}
+@keyframes nsBr0{0%,30%{color:var(--ink);border-color:var(--sky);box-shadow:0 0 26px rgba(84,197,248,.35)}33%,62%{color:#9FB3C8;border-color:rgba(255,255,255,.22);box-shadow:none}65%,100%{color:var(--ink);border-color:var(--sky);box-shadow:0 0 26px rgba(84,197,248,.35)}}
+@keyframes nsBr1{0%,30%{color:#9FB3C8;border-color:rgba(255,255,255,.22);box-shadow:none}33%,62%{color:var(--ink);border-color:var(--sky);box-shadow:0 0 26px rgba(84,197,248,.35)}65%,100%{color:#9FB3C8;border-color:rgba(255,255,255,.22);box-shadow:none}}
+@keyframes nsPg0{0%,30%{border-style:solid;border-color:var(--sky)}33%,62%{border-style:dashed;border-color:rgba(159,179,200,.6)}65%,100%{border-style:solid;border-color:var(--sky)}}
+@keyframes nsPg1{0%,30%{border-style:dashed;border-color:rgba(159,179,200,.6)}33%,62%{border-style:solid;border-color:var(--sky)}65%,100%{border-style:dashed;border-color:rgba(159,179,200,.6)}}
+
+/* B) interceptor chain (fixed 900x700 coordinate space) */
+.chain{width:900px;height:700px}
+.chain .cn{position:absolute;left:225px;width:450px;height:96px;background:var(--card);border:2px solid var(--sky);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:4px 10px}
+.chain .cn b{font:700 26px var(--mono);direction:ltr;unicode-bidi:isolate;color:var(--ink)}
+.chain .cn small{font:500 24px/1.25 var(--sans);color:#E3ECF5}
+.chain .c0{top:0;border-color:rgba(255,255,255,.55)}
+.chain .c1{top:140px}
+.chain .c2{top:280px}
+.chain .c3{top:420px;border-color:var(--amber)}
+.chain .c4{top:590px;left:470px;width:420px;border-color:var(--teal)}
+.chain .c5{top:590px;left:10px;width:420px;border-color:var(--rose)}
+.chain svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.chain svg line{stroke:rgba(255,255,255,.7);stroke-width:3;marker-end:url(#arr2)}
+.chain svg text{fill:#E3ECF5;font:700 24px var(--mono);direction:ltr;unicode-bidi:isolate}
+.chain svg text.ar{font-family:var(--sans)}
+.chain .pulse{position:absolute;left:0;top:0;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:var(--amber);box-shadow:0 0 18px var(--amber);opacity:0;offset-rotate:0deg}
+.chain .pulse.err{background:var(--rose);box-shadow:0 0 18px var(--rose)}
+.chain .pq1,.chain .pq3{offset-path:path('M450 96 L450 420')}
+.chain .pq2{offset-path:path('M450 516 L680 590')}
+.chain .pq4{offset-path:path('M450 516 L220 590')}
+.play.chain .pulse{animation:travel 1.4s linear both;animation-delay:var(--d)}
+.play.chain .flash{animation:flash 1s var(--d)}
+.play.chain .flash2{animation:flash 1s var(--d),flash 1s var(--d2)}
+
+/* C) 401 -> refresh -> retry sequence */
+.sq{direction:ltr;display:flex;flex-direction:column}
+.sq .lanes{display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;margin-bottom:6px}
+.sq .lanes span{font:800 26px/1.25 var(--sans);color:var(--sky);padding:6px 4px 10px;border-bottom:2px solid rgba(84,197,248,.4)}
+.sq .lanes span small{display:block;font:600 24px var(--mono);color:#D5E1EC}
+.sq .rows{position:relative}
+.sq .life{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed rgba(255,255,255,.25)}
+.sq .row{position:relative;height:66px}
+.sq .msg{position:absolute;top:6px;height:56px}
+.sq .msg::before{content:'';position:absolute;left:0;right:0;top:44px;height:3px;background:#E3ECF5}
+.sq .msg::after{content:'';position:absolute;top:36px;width:0;height:0;border-top:9px solid transparent;border-bottom:9px solid transparent}
+.sq .msg.tl::after{left:0;border-right:16px solid #E3ECF5}
+.sq .msg.tr::after{right:0;border-left:16px solid #E3ECF5}
+.sq .msg span{display:block;text-align:center;font:600 24px/40px var(--mono);white-space:nowrap;color:var(--ink)}
+.sq .msg span bdi{font-family:var(--sans);font-weight:700}
+.sq .msg.bad::before{background:var(--rose)} .sq .msg.bad.tr::after{border-left-color:var(--rose)} .sq .msg.bad span{color:#FFC2CC}
+.sq .msg.ok::before{background:var(--teal)} .sq .msg.ok.tr::after{border-left-color:var(--teal)} .sq .msg.ok span{color:#B5FBE0}
+.sq .msg.ref::before{background:var(--amber)} .sq .msg.ref.tl::after{border-right-color:var(--amber)} .sq .msg.ok.tl::after{border-right-color:var(--teal)}
+.sq .self{position:absolute;top:10px;left:calc(50% + 16px);font:700 24px/1 var(--mono);color:#042B59;background:var(--amber);border-radius:999px;padding:12px 20px;white-space:nowrap}
+.sq .num{position:absolute;top:14px;left:0;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.1);color:#E3ECF5;font:800 24px var(--mono);display:flex;align-items:center;justify-content:center}
+.play.sq .row{animation:fadein .45s both var(--d)}
+
+/* v4 readability: kicker + footer clearly above the 24px floor */
+.slide::before{font-size:28px}
+.slide::after{font-size:26px}
+.chain .cn small bdi{font-size:1em}
+.recap li .ic{font-size:.86em}
+.run code{padding:6px 18px}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div id="stage">
+<div class="bgshape bg1"></div><div class="bgshape bg2"></div><div class="bgshape bg3"></div>
+
+<!-- ================= 1 TITLE ================= -->
+<section class="slide title">
+  <div class="mark a"><i class="m1"></i><i class="m2"></i><i class="m3"></i></div>
+  <div class="kick a">المستوى الثاني · ورشة عملية على 5 أيام</div>
+  <h1 class="a">ورشة <span class="en">Flutter</span> المتقدمة</h1>
+  <h2 class="a">اليوم الثاني — التنقّل مع go_router والشبكة مع Dio (+ Dart: Records و Sealed و freezed)</h2>
+  <div class="chips a"><span>Flutter 3.47.9</span><span>go_router 18.1.3</span><span>dio 5.11.1</span><span>freezed 4.0.3</span><span>flutter_riverpod 3.5.0</span></div>
+  <div class="hint a">→ أو Space للتقدّم · O نظرة عامة على الشرائح · F ملء الشاشة</div>
+</section>
+
+<!-- ================= 2 AGENDA ================= -->
+<section class="slide" data-kicker="برنامج اليوم">
+  <h2 class="a">9 دروس — رقم واحد في العرض والقائمة والملف</h2>
+  <div class="body">
+    <div class="lgrid nine">
+      <div class="lcard dart a"><span class="num">1</span><span class="t">Records و Sealed classes <span class="tag dart">Dart</span></span><span class="f">01_records_sealed.dart</span></div>
+      <div class="lcard dart a"><span class="num">2</span><span class="t">freezed و JSON <span class="tag dart">Dart</span></span><span class="f">02_freezed_json.dart</span></div>
+      <div class="lcard a"><span class="num">3</span><span class="t">الإعداد والباراميترات <span class="tag gr">go_router</span></span><span class="f">03_go_router_basics.dart</span></div>
+      <div class="lcard a"><span class="num">4</span><span class="t">ShellRoute والمسارات المتداخلة <span class="tag gr">go_router</span></span><span class="f">04_shell_route.dart</span></div>
+      <div class="lcard a"><span class="num">5</span><span class="t">redirect و Deep links <span class="tag gr">go_router</span></span><span class="f">05_guards_deep_links.dart</span></div>
+      <div class="lcard a"><span class="num">6</span><span class="t">الإعداد و Interceptors <span class="tag dio">Dio</span></span><span class="f">06_dio_interceptors.dart</span></div>
+      <div class="lcard a"><span class="num">7</span><span class="t">معالجة الأخطاء <span class="tag dio">Dio</span></span><span class="f">07_error_handling.dart</span></div>
+      <div class="lcard a"><span class="num">8</span><span class="t">Access و Refresh tokens <span class="tag dio">Dio</span></span><span class="f">08_auth_tokens.dart</span></div>
+      <div class="lcard a"><span class="num">9</span><span class="t">Pagination <span class="tag dio">Dio</span></span><span class="f">09_pagination.dart</span></div>
+    </div>
+    <div class="key a" style="margin-top:20px"><b>التشغيل مرة واحدة:</b> <span class="ic">flutter run</span> من مجلد <span class="ic">day2_examples</span> (بعد <span class="ic">build_runner</span>) ثم اختر الدرس — القائمة نفسها تعمل بـ go_router: كل درس رابط <span class="ic">/l1</span> … <span class="ic">/l9</span>، وكل درس ينتهي بـ <b style="color:var(--amber)">💡 حيل الدرس</b>.</div>
+  </div>
+</section>
+
+<!-- ================= 3 L1 OPENER: Records ================= -->
+<section class="slide" data-kicker="الدرس 1 · Records و Sealed classes · Dart">
+  <div class="lh a"><span class="num">1</span><span class="lt">الدرس 1 · Records و Sealed classes</span><span class="tag dart">Dart</span></div>
+  <h2 class="a">الـ Record: مجموعة قيم بدون class</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>غير قابل للتعديل</b> (immutable)، والأنواع محفوظة لكل حقل.</li>
+        <li class="a"><b>المساواة بالقيمة</b> تلقائياً: <span class="ic">a == b</span> صحيحة إذا تطابقت الحقول — عكس الـ class العادي.</li>
+        <li class="a">موضعي <span class="ic">$1 · $2</span> أو مسمّى <span class="ic">(name: …)</span>، و<b>التفكيك</b> مباشرة إلى متغيرات.</li>
+        <li class="a">اليوم نستخدمه في <span class="ic">extra</span> (الدرس 3) وزوج التوكنات (الدرس 8).</li>
+      </ul>
+      <div class="tip a"><b>💡 متى؟</b> Record للبيانات المؤقتة الصغيرة (إرجاع قيمتين، مفتاح مركّب) — و class مع freezed (الدرس 2) للنماذج.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_records_sealed.dart"><code>// 1) إرجاع أكثر من قيمة من دالة — أشهر استخدام
+(double min, double max) minMax(List&lt;double&gt; values) {
+// ...
+// 3) typedef لإعطاء اسم للـ Record وإعادة استخدامه
+typedef Point = ({double x, double y});
+
+final pair = ('Flutter', 2026);
+// التفكيك (Destructuring) مباشرة إلى متغيرات
+final (min, max) = minMax([4, 9, 1, 7]);
+// حقول مسمّاة + تفكيكها: :name تعني name: name
+final user = parseUser({'name': 'سارة', 'age': 25});
+final (:name, :age, email: _) = user;
+// المساواة بالقيمة (عكس الـ class العادي)
+const Point a = (x: 1, y: 2);
+const Point b = (x: 1, y: 2);
+// تبديل قيمتين في سطر واحد
+(first, second) = (second, first);</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 4 L1: sealed ================= -->
+<section class="slide" data-kicker="الدرس 1 · Records و Sealed classes · Dart">
+  <h2 class="a"><span class="en">sealed class</span>: كل الحالات معروفة — والمترجم يتأكد أنك غطيتها</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">كل الأنواع الفرعية في <b>نفس الملف</b> ← لا أحد يضيف حالة من الخارج.</li>
+        <li class="a"><b>switch expression</b> بدون <span class="ic">default</span>: التغطية الكاملة مضمونة.</li>
+        <li class="a">أضفت حالة ونسيت معالجتها؟ <b>خطأ وقت الترجمة</b> وليس crash عند المستخدم.</li>
+        <li class="a"><span class="ic">Circle(:final radius)</span> = نمط كائن: يفحص النوع ويستخرج الحقل معاً.</li>
+      </ul>
+      <div class="warn a"><b>جرّب:</b> احذف سطر Square ← خطأ ترجمة: <span class="ic">not exhaustively matched</span></div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_records_sealed.dart"><code>sealed class Shape {}
+
+class Circle extends Shape {
+  Circle(this.radius);
+  final double radius;
+}
+
+class Square extends Shape {
+  Square(this.side);
+  final double side;
+}
+// ...
+// switch expression: لا نحتاج default لأن الـ sealed تضمن التغطية الكاملة
+double area(Shape shape) =&gt; switch (shape) {
+  Circle(:final radius) =&gt; 3.14 * radius * radius,
+  Square(:final side) =&gt; side * side,
+  Rectangle(:final width, :final height) =&gt; width * height,
+};</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 5 L1: patterns ================= -->
+<section class="slide" data-kicker="الدرس 1 · Records و Sealed classes · Dart">
+  <h2 class="a">Pattern matching: <span class="en">when</span> · Map · علائقي · منطقي</h2>
+  <div class="body"><div class="cols even">
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_records_sealed.dart"><code>// مثال عملي: نتيجة طلب شبكة
+sealed class Result&lt;T&gt; {
+  const Result();
+}
+// ...
+String render(Result&lt;List&lt;String&gt;&gt; result) =&gt;
+    switch (result) {
+  Loading() =&gt; '⏳ جاري التحميل...',
+  // guard باستخدام when: شرط إضافي على النمط
+  Success(data: final items) when items.isEmpty =&gt;
+      '📭 لا توجد بيانات',
+  Success(data: final items) =&gt;
+      '✅ ${items.length} عناصر: $items',
+  Failure(code: 401) =&gt; '🔒 يجب تسجيل الدخول',
+  Failure(:final message) =&gt; '❌ $message',
+};</code></pre>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/01_records_sealed.dart"><code>// نمط الـ Map: يتحقق من الشكل والأنواع معاً
+if (json case {'user':
+    {'name': String name, 'age': int age}}) {
+  _log('JSON صالح: $name ($age)');
+}
+
+// الأنماط المنطقية والعلائقية: &amp;&amp; و || و &gt;= و &lt;
+String classify(int score) =&gt; switch (score) {
+  &gt;= 90 &amp;&amp; &lt;= 100 =&gt; 'ممتاز',
+  &gt;= 75 &amp;&amp; &lt; 90 =&gt; 'جيد جداً',
+  &lt; 0 || &gt; 100 =&gt; 'درجة غير صالحة',
+  _ =&gt; 'راسب',
+};</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 1</span><code>lib/lessons/01_records_sealed.dart</code><span class="menu">الزر <span class="ic">5)</span> يبني Widget لكل حالة بـ switch</span></div>
+</section>
+
+<!-- ================= 6 TIPS L1 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 1 · Records و Sealed classes">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 1</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">Record بحقل واحد يحتاج فاصلة: <span class="ic">('وحيد',)</span> — بدونها هي مجرد أقواس.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">Record كباراميتر family في Riverpod — المساواة بالقيمة تضمن نفس الحالة:
+<pre class="code tip" data-file="lib/lessons/01_records_sealed.dart"><code>ref.watch(searchProvider((page: 1, query: 'لابتوب')));</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">استخدم if-case للتحقق من JSON بدل سلسلة من is و as:
+<pre class="code tip" data-file="lib/lessons/01_records_sealed.dart"><code>if (json case {'id': int id, 'title': String title}) { ... }</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx"><span class="ic">final class</span> / <span class="ic">base</span> / <span class="ic">interface</span> (Dart 3) تتحكم بمن يرث أو يطبّق الـ class خارج المكتبة، أما <span class="ic">sealed</span> فتضيف عليها: switch شامل بدون default.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 7 L2 OPENER: freezed ================= -->
+<section class="slide" data-kicker="الدرس 2 · freezed و JSON · Dart">
+  <div class="lh a"><span class="num">2</span><span class="lt">الدرس 2 · freezed و JSON</span><span class="tag dart">Dart</span></div>
+  <h2 class="a">نكتب «الوصف» فقط — والأداة تولّد الباقي</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>المشكلة:</b> model يدوي يحتاج constructor + fromJson + toJson + copyWith + == + hashCode + toString.</li>
+        <li class="a"><span class="ic">02_freezed_json.freezed.dart</span> ← copyWith و == و toString</li>
+        <li class="a"><span class="ic">02_freezed_json.g.dart</span> ← fromJson و toJson</li>
+        <li class="a">نربطهما بالملف عبر <span class="ic">part '…';</span> ولا نعدّلهما يدوياً أبداً.</li>
+      </ul>
+      <div class="key a"><b>التوليد:</b> <span class="ic">dart run build_runner build -d</span> — أو <span class="ic">watch -d</span> طوال الدرس.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/02_freezed_json.dart"><code>@freezed
+abstract class User with _$User {
+  const factory User({
+    required int id,
+    required String name,
+    required String email,
+    // اسم الحقل في JSON مختلف عن اسمه في Dart
+    @JsonKey(name: 'avatar_url') String? avatarUrl,
+    // قيمة افتراضية إذا لم يأتِ الحقل من الـ API
+    @Default(false) bool isVerified,
+    @Default(&lt;String&gt;[]) List&lt;String&gt; roles,
+  }) = _User;
+
+  // نحتاج هذا السطر ليولّد json_serializable دالة fromJson
+  factory User.fromJson(Map&lt;String, dynamic&gt; json) =&gt;
+      _$UserFromJson(json);
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 8 L2: real models ================= -->
+<section class="slide" data-kicker="الدرس 2 · freezed و JSON · Dart">
+  <h2 class="a">نماذج حقيقية من dummyjson — للدرسين 7 و 9</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">price</span> قد يصل int أو double — المولَّد يستخدم <span class="ic">(num).toDouble()</span>.</li>
+        <li class="a">قائمة متداخلة ← <span class="ic">Product.fromJson</span> لكل عنصر تلقائياً.</li>
+        <li class="a">الحقول الزائدة في JSON (مثل <span class="ic">stock</span>) تُتجاهل بهدوء.</li>
+        <li class="a">حقل <b>required</b> ناقص ← خطأ نوع (لا null صامت) — جرّب الزر <span class="ic">4)</span>.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/02_freezed_json.dart"><code>@freezed
+abstract class Product with _$Product {
+  const factory Product({
+    required int id,
+    required String title,
+    required double price,
+    @Default(0) double rating,
+    @JsonKey(name: 'discountPercentage') @Default(0) double discount,
+    String? thumbnail,
+  }) = _Product;
+// ...
+  // explicitToJson: toJson يحوّل القائمة المتداخلة إلى Map أيضاً
+  @JsonSerializable(explicitToJson: true)
+  const factory ProductsPage({
+    required List&lt;Product&gt; products,
+    required int total,
+    required int skip,
+    required int limit,
+  }) = _ProductsPage;</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 9 L2: copyWith / == / union ================= -->
+<section class="slide" data-kicker="الدرس 2 · freezed و JSON · Dart">
+  <h2 class="a"><span class="en">copyWith</span> و <span class="en">==</span> و Union (sealed + freezed)</h2>
+  <div class="body"><div class="cols even">
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/02_freezed_json.dart"><code>final user = _parseUser();
+// الكائن immutable، فننشئ نسخة معدّلة
+final verified =
+    user.copyWith(isVerified: true, roles: ['admin']);
+_log('الأصل لم يتغير: isVerified = ${user.isVerified}');
+// == و hashCode مولّدة
+_log('user == verified ؟ ${user == verified}');
+
+// لاحظ أن avatarUrl رجعت avatar_url بسبب @JsonKey
+_log('toJson: ${jsonEncode(user.toJson())}');</code></pre>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/02_freezed_json.dart"><code>@freezed
+sealed class AuthState with _$AuthState {
+  const factory AuthState.initial() = AuthInitial;
+  const factory AuthState.loading() = AuthLoading;
+  const factory AuthState.authenticated(User user) =
+      Authenticated;
+  const factory AuthState.error(String message) =
+      AuthError;
+}
+
+final text = switch (state) {
+  AuthInitial() =&gt; 'لم يسجّل الدخول بعد',
+  AuthLoading() =&gt; 'جاري التحقق...',
+  Authenticated(:final user) =&gt;
+      'أهلاً ${user.name} 👋',
+  AuthError(:final message) =&gt; 'خطأ: $message',
+};</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 2</span><code>lib/lessons/02_freezed_json.dart</code><code>dart run build_runner build -d</code></div>
+</section>
+
+<!-- ================= 10 TIPS L2 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 2 · freezed و JSON">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 2</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">لرسالة خطأ أوضح عند JSON ناقص ضع <span class="ic">@JsonSerializable(checked: true)</span> فوق الـ factory، فيصبح الخطأ <span class="ic">CheckedFromJsonException</span> يذكر اسم الحقل بدل TypeError عام.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">أسماء الـ API بصيغة snake_case؟ بدل @JsonKey على كل حقل:
+<pre class="code tip" data-file="lib/lessons/02_freezed_json.dart"><code>@JsonSerializable(fieldRename: FieldRename.snake)</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">getter أو دالة داخل الـ Model تحتاج constructor خاصاً فارغاً:
+<pre class="code tip" data-file="lib/lessons/02_freezed_json.dart"><code>const Product._();
+double get finalPrice =&gt; price * (1 - discount / 100);</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">JSON كبير جداً يجمّد الشاشة؟ انقل التحويل إلى Isolate (اليوم الخامس):
+<pre class="code tip" data-file="lib/lessons/02_freezed_json.dart"><code>final page = await Isolate.run(() =&gt; ProductsPage.fromJson(map));</code></pre></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 11 L3 OPENER: setup ================= -->
+<section class="slide" data-kicker="الدرس 3 · الإعداد والباراميترات · go_router">
+  <div class="lh a"><span class="num">3</span><span class="lt">الدرس 3 · الإعداد والباراميترات</span><span class="tag gr">go_router</span></div>
+  <h2 class="a">تنقّل مبني على الروابط: كل شاشة لها مسار</h2>
+  <div class="body"><div class="cols">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a">نفس الرابط يعمل من زر، من شريط المتصفح (Web)، ومن رابط خارجي (الدرس 5).</li>
+        <li class="a"><b><bdi dir="ltr">1)</bdi></b> <span class="ic">GoRouter(routes: [...])</span> جدول المسارات.</li>
+        <li class="a"><b><bdi dir="ltr">2)</bdi></b> <span class="ic">MaterialApp.router</span> بدل <span class="ic">home:</span>.</li>
+        <li class="a"><b><bdi dir="ltr">3)</bdi></b> القائمة مسار <span class="ic">/</span> وكل درس مسار فرعي ← زر الرجوع يعود للقائمة.</li>
+      </ul>
+      <div class="tip a"><b>💡</b> الـ router نفسه Provider ← يقرأ حالة الدخول في الدرس 5.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/main.dart"><code>final appRouterProvider = Provider&lt;GoRouter&gt;((ref) {
+  final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
+    initialLocation: '/',
+    // الدرس 3: أي رابط غير معروف
+    errorBuilder: (context, state) =&gt; NotFoundScreen(state: state),
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) =&gt; const LessonsMenu(),
+        routes: [
+          lesson3Route, // '/l3' ومساراته الفرعية
+// ...
+// routerConfig بدل home: go_router يقرّر أي شاشة تظهر حسب الرابط
+routerConfig: ref.watch(appRouterProvider),</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 12 L3: params ================= -->
+<section class="slide" data-kicker="الدرس 3 · الإعداد والباراميترات · go_router">
+  <h2 class="a">ثلاث طرق لتمرير البيانات: path · query · extra</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <table class="tbl a">
+        <thead><tr><th>الطريقة</th><th>مثال</th></tr></thead>
+        <tbody>
+          <tr><td><b>path</b> إجباري</td><td class="mono">/l3/product/7</td></tr>
+          <tr><td><b>query</b> اختياري</td><td class="mono">?tab=reviews</td></tr>
+          <tr><td><b>extra</b> كائن Dart</td><td class="mono">extra: p</td></tr>
+        </tbody>
+      </table>
+      <div class="warn a"><b>⚠️ extra</b> لا يُحفظ في الرابط: يضيع في Deep link وعند تحديث صفحة Web — مرّر id دائماً.</div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/03_go_router_basics.dart"><code>final lesson3Route = GoRoute(
+  path: 'l3', // مسار فرعي من '/' ← الرابط الكامل '/l3'
+  builder: (context, state) =&gt; const CatalogScreen(),
+  routes: [
+    GoRoute(
+      path: 'product/:id',
+      name: 'l3-product',
+      builder: (context, state) =&gt; ProductDetailsScreen(
+        // الباراميترات دائماً String ← نحوّلها بأمان
+        id: int.tryParse(state.pathParameters['id'] ?? ''),
+        tab: state.uri.queryParameters['tab'] ?? 'details',
+        preview: state.extra as ProductPreview?,
+      ),
+    ),</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 13 L3: navigating ================= -->
+<section class="slide" data-kicker="الدرس 3 · الإعداد والباراميترات · go_router">
+  <h2 class="a"><span class="en">push</span> · <span class="en">pushNamed</span> · <span class="en">go</span> · <span class="en">pop(result)</span></h2>
+  <div class="body"><div class="cols even">
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/03_go_router_basics.dart"><code>// الرابط يحمل id، و extra يحمل الكائن كاملاً
+onTap: () =&gt; context.push(
+  '/l3/product/${p.id}',
+  extra: p,
+),
+// 2) query: نبني الرابط بـ Uri ليُرمَّز النص العربي تلقائياً
+context.push(
+  Uri(
+    path: '/l3/search',
+    queryParameters: {'q': 'سماعات', 'sort': 'price'},
+  ).toString(),
+),</code></pre>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/03_go_router_basics.dart"><code>// 4) المسار المسمّى: لا نكتب الرابط يدوياً
+context.pushNamed(
+  'l3-product',
+  pathParameters: {'id': '$id'},
+  queryParameters: {'tab': 'reviews'},
+),
+// 6) نافذة تُرجع نتيجة: push&lt;T&gt; ينتظر حتى تُغلق
+final color =
+    await context.push&lt;String&gt;('/l3/pick-color');
+onTap: () =&gt; context.pop(color),
+// go: يبني المكدّس من شكل الرابط
+onPressed: () =&gt; context.go('/l3/product/2'),</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 3</span><code>lib/lessons/03_go_router_basics.dart</code><span class="menu">راقب شريط «الرابط الحالي» أعلى كل شاشة</span></div>
+</section>
+
+<!-- ================= 14 TIPS L3 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 3 · الإعداد والباراميترات">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 3</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">لا تبنِ روابط query بدمج النصوص يدوياً — النص العربي والمسافات و <span class="ic">&amp;</span> تكسر الرابط. استخدم Uri:
+<pre class="code tip" data-file="lib/lessons/03_go_router_basics.dart"><code>Uri(path: '/l3/search', queryParameters: {'q': text}).toString()</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">أثناء التطوير فعّل سجلّ التنقّل في الكونسول: <span class="ic">GoRouter(debugLogDiagnostics: true, routes: [...])</span></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx"><b>go</b> = «اذهب إلى هذا الرابط» (يبني المكدّس من شكل الرابط) · <b>push</b> = «افتح فوق الحالية» (للتفاصيل والنوافذ التي تُرجع نتيجة).</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">على Web أزل علامة # من الروابط (بعد إضافة <span class="ic">flutter_web_plugins</span> إلى pubspec):
+<pre class="code tip" data-file="lib/lessons/03_go_router_basics.dart"><code>import 'package:flutter_web_plugins/url_strategy.dart';
+usePathUrlStrategy();</code></pre></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 15 L4 OPENER: diagram ================= -->
+<section class="slide" data-kicker="الدرس 4 · ShellRoute والمسارات المتداخلة · go_router">
+  <div class="lh a"><span class="num">4</span><span class="lt">الدرس 4 · ShellRoute والمسارات المتداخلة</span><span class="tag gr">go_router</span></div>
+  <h2 class="a">مكدّس واحد أم Navigator لكل تبويب؟</h2>
+  <div class="body"><div class="cols diagram wd">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>مسارات متداخلة:</b> <span class="ic">/l4/feed/post/3</span> يبني المكدّس تلقائياً.</li>
+        <li class="a"><b>ShellRoute:</b> إطار ثابت (Scaffold + شريط سفلي) يتغيّر المحتوى داخله فقط.</li>
+        <li class="a"><b>العادي:</b> Navigator واحد ← تبديل التبويب يضيّع الحالة.</li>
+        <li class="a">✅ <b><bdi dir="ltr">StatefulShellRoute</bdi>:</b> لكل تبويب Navigator يحفظ مكدّسه والتمرير والـ State.</li>
+      </ul>
+    </div>
+    <div class="col dia">
+      <div class="diagram ns a" data-loop="9000">
+        <div class="stepbar"><span class="step s1"><bdi dir="ltr">1)</bdi> افتح «منشور 3» في الرئيسية</span><span class="step s2"><bdi dir="ltr">2)</bdi> انتقل إلى تبويب «بحث»</span><span class="step s3"><bdi dir="ltr">3)</bdi> عُد إلى «الرئيسية»</span></div>
+        <div class="panels">
+          <div class="nsp p1">
+            <div class="nst">مكدّس واحد<small>ShellRoute عادي</small></div>
+            <div class="stk">
+              <div class="pg base">الإطار</div>
+              <div class="pg l1 feed">الرئيسية</div>
+              <div class="pg l1 srch">بحث</div>
+              <div class="pg l2 lost">منشور 3</div>
+            </div>
+            <div class="verdict bad">❌ المنشور ضاع</div>
+          </div>
+          <div class="nsp p2">
+            <div class="nst">Navigator لكل تبويب<small>StatefulShellRoute</small></div>
+            <div class="brs">
+              <div class="br b0 on"><div class="pg l1">الرئيسية</div><div class="pg l2 post">منشور 3</div></div>
+              <div class="br b1"><div class="pg l1">بحث · 3</div></div>
+              <div class="br b2"><div class="pg l1">حسابي</div></div>
+            </div>
+            <div class="tabs"><span class="t0 on">الرئيسية</span><span class="t1">بحث</span><span class="t2">حسابي</span></div>
+            <div class="verdict good">✅ كما تركته</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 16 L4: code ================= -->
+<section class="slide" data-kicker="الدرس 4 · ShellRoute والمسارات المتداخلة · go_router">
+  <h2 class="a"><span class="en">StatefulShellRoute.indexedStack</span> + <span class="en">goBranch</span></h2>
+  <div class="body"><div class="cols even">
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/04_shell_route.dart"><code>return StatefulShellRoute.indexedStack(
+  builder: (context, state, navigationShell) =&gt;
+      ShellScaffold(navigationShell: navigationShell),
+  branches: [
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: 'l4/feed',
+          builder: (context, state) =&gt; const FeedTab(),
+          routes: [
+            GoRoute(
+              path: 'post/:id',
+// ...
+// تُفتح فوق الإطار كاملاً (بدون شريط سفلي)
+GoRoute(
+  path: 'settings',
+  parentNavigatorKey: rootKey,</code></pre>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/04_shell_route.dart"><code>return Scaffold(
+  // ...
+  body: navigationShell, // محتوى التبويب الحالي
+  bottomNavigationBar: NavigationBar(
+    selectedIndex: navigationShell.currentIndex,
+    onDestinationSelected: (index) =&gt;
+        navigationShell.goBranch(
+      index,
+      // الضغط على التبويب الحالي مرة ثانية
+      // ← العودة إلى أول شاشة فيه
+      initialLocation:
+          index == navigationShell.currentIndex,
+    ),</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 4</span><code>lib/lessons/04_shell_route.dart</code><span class="menu">افتح منشوراً ← «بحث» ← عُد</span></div>
+</section>
+
+<!-- ================= 17 TIPS L4 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 4 · ShellRoute والمسارات المتداخلة">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 4</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">لا تريد حفظ حالة التبويبات (مثلاً معالج خطوات Wizard)؟ ShellRoute العادي:
+<pre class="code tip" data-file="lib/lessons/04_shell_route.dart"><code>ShellRoute(builder: (context, state, child) =&gt; Frame(child: child), routes: [...])</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">حمّل تبويباً مسبقاً قبل أن يفتحه المستخدم (لجلب بياناته مبكراً): <span class="ic">StatefulShellBranch(preload: true, routes: [...])</span></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">شريط سفلي على الهاتف و NavigationRail على الشاشات العريضة داخل نفس ShellScaffold — المسارات لا تتغير: <span class="ic">MediaQuery.sizeOf(context).width &gt; 600</span></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">شاشة داخل تبويب لا تحتاج Scaffold خاصاً (الإطار يوفّره)، أما ذات <span class="ic">parentNavigatorKey: rootKey</span> فتحتاج Scaffold كاملاً.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 18 L5 OPENER: guard ================= -->
+<section class="slide" data-kicker="الدرس 5 · redirect و Deep links · go_router">
+  <div class="lh a"><span class="num">5</span><span class="lt">الدرس 5 · redirect و Deep links</span><span class="tag gr">go_router</span></div>
+  <h2 class="a">الحارس: دالة تُستدعى قبل كل تنقّل</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">null</span> ← اسمح · <span class="ic">'/رابط'</span> ← حوّل المستخدم.</li>
+        <li class="a"><b>from:</b> نتذكّر وجهته ونعيده إليها بعد الدخول.</li>
+        <li class="a"><b>refreshListenable:</b> عند تغيّر حالة الدخول يُعاد تقييم redirect ← شاشة الدخول لا تتنقّل بنفسها.</li>
+        <li class="a">تأخذ <span class="ic">Uri</span> لا GoRouterState ← اختبار في سطر واحد.</li>
+      </ul>
+    </div>
+    <div class="col code"><div class="stack">
+<pre class="code a sm" data-file="lib/lessons/05_guards_deep_links.dart"><code>String? lesson5Guard({required bool loggedIn, required Uri uri}) {
+  final path = uri.path; // بدون day2://open — المسار فقط
+  final isProtected = path.startsWith('/l5/account');
+  final isLogin = path == '/l5/login';
+  if (!loggedIn &amp;&amp; isProtected) {
+    return '/l5/login?from=${Uri.encodeComponent(path)}';
+  }
+  if (loggedIn &amp;&amp; isLogin) {
+    return uri.queryParameters['from'] ?? '/l5';
+  }
+  return null; // 3) لا تغيير
+}</code></pre>
+<pre class="code a sm" data-file="lib/main.dart"><code>refreshListenable: refresh,
+redirect: (context, state) =&gt; lesson5Guard(
+  loggedIn: ref.read(demoSessionProvider) != null,
+  uri: state.uri,
+),</code></pre>
+    </div></div>
+  </div></div>
+</section>
+
+<!-- ================= 19 L5: deep links ================= -->
+<section class="slide" data-kicker="الدرس 5 · redirect و Deep links · go_router">
+  <h2 class="a">Deep links: رابط من خارج التطبيق يفتح شاشة محددة</h2>
+  <div class="body">
+    <div class="cols wide">
+      <div class="col text">
+        <ul class="bul tight">
+          <li class="a">لا كود Dart إضافي: الرابط يمر بنفس الـ routes ونفس redirect.</li>
+          <li class="a"><b>iOS:</b> <span class="ic">CFBundleURLSchemes = day2</span> في <bdi dir="ltr">Info.plist</bdi>.</li>
+          <li class="a">روابط https تحتاج <span class="ic">assetlinks.json</span> على موقعك.</li>
+        </ul>
+      </div>
+      <div class="col code">
+<pre class="code a" data-file="android/app/src/main/AndroidManifest.xml"><code>&lt;intent-filter&gt;
+    &lt;action android:name="android.intent.action.VIEW" /&gt;
+    &lt;category android:name="android.intent.category.DEFAULT" /&gt;
+    &lt;category android:name="android.intent.category.BROWSABLE" /&gt;
+    &lt;data android:scheme="day2" android:host="open" /&gt;
+&lt;/intent-filter&gt;</code></pre>
+      </div>
+    </div>
+<pre class="code a" data-file="lib/lessons/05_guards_deep_links.dart" style="margin-top:20px"><code>//   adb shell am start -a android.intent.action.VIEW -d "day2://open/l5/products/7?ref=sms"
+//   xcrun simctl openurl booted "day2://open/l5/products/7?ref=sms"</code></pre>
+  </div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 5</span><code>lib/lessons/05_guards_deep_links.dart</code><code>test/router_test.dart</code></div>
+</section>
+
+<!-- ================= 20 TIPS L5 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 5 · redirect و Deep links">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 5</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">redirect على مستوى GoRoute واحد بدل التطبيق كله (يحمي المسار وكل ما تحته):
+<pre class="code tip" data-file="lib/lessons/05_guards_deep_links.dart"><code>GoRoute(path: 'admin', redirect: (context, state) =&gt; isAdmin ? null : '/l5', ...)</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">احذر الحلقة اللانهائية: إذا حوّلت إلى <span class="ic">/login</span> فأعد null عندما يكون المستخدم هناك أصلاً — go_router يوقفها بعد <span class="ic">redirectLimit</span> (5).</div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">Deep link والتطبيق مغلق تماماً (cold start) يمر بنفس redirect ونفس routes — جرّبه بإغلاق التطبيق ثم أمر adb.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">مكتبة روابط أخرى (مثل app_links)؟ أوقف معالجة Flutter الافتراضية حتى لا يُفتح الرابط مرتين:
+<pre class="code tip" data-file="lib/lessons/05_guards_deep_links.dart"><code>&lt;meta-data android:name="flutter_deeplinking_enabled" android:value="false" /&gt;</code></pre></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 21 L6 OPENER: interceptor chain ================= -->
+<section class="slide" data-kicker="الدرس 6 · الإعداد و Interceptors · Dio">
+  <div class="lh a"><span class="num">6</span><span class="lt">الدرس 6 · الإعداد و Interceptors</span><span class="tag dio">Dio</span></div>
+  <h2 class="a">Interceptor = نقطة تفتيش يمر بها كل طلب ورد وخطأ</h2>
+  <div class="body"><div class="cols diagram wd">
+    <div class="col text">
+<pre class="code a sm" data-file="lib/lessons/06_dio_interceptors.dart"><code>class HeadersInterceptor extends Interceptor {
+  @override
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) {
+    options.headers['Accept-Language'] = 'ar';
+    options.headers['X-App-Version'] = '2.0.0';
+    handler.next(options);
+  }
+}</code></pre>
+      <div class="warn a"><b>⚠️</b> بدون <span class="ic">handler.next</span> يبقى الطلب معلّقاً للأبد — أو <span class="ic">resolve</span> / <span class="ic">reject</span> لإيقاف السلسلة.</div>
+    </div>
+    <div class="col dia">
+      <div class="diagram chain a" data-loop="8000">
+        <svg viewBox="0 0 900 700">
+          <defs><marker id="arr2" markerUnits="userSpaceOnUse" markerWidth="18" markerHeight="16" refX="17" refY="8" orient="auto"><path d="M0,0 L18,8 L0,16 z" fill="#E3ECF5"/></marker></defs>
+          <line x1="450" y1="96" x2="450" y2="138"/>
+          <line x1="450" y1="236" x2="450" y2="278"/>
+          <line x1="450" y1="376" x2="450" y2="418"/>
+          <line x1="450" y1="516" x2="680" y2="588"/>
+          <line x1="450" y1="516" x2="220" y2="588"/>
+          <text x="470" y="126">next()</text>
+          <text x="470" y="266">next()</text>
+          <text x="470" y="406">next()</text>
+          <text x="610" y="545">200</text>
+          <text x="160" y="545">404</text>
+        </svg>
+        <div class="cn c0"><b>dio.get('/products/1')</b><small>الشاشة</small></div>
+        <div class="cn c1 flash2" style="--d:.5s;--d2:3.9s"><b>HeadersInterceptor</b><small><bdi dir="ltr">onRequest</bdi>: يضيف الـ headers</small></div>
+        <div class="cn c2 flash2" style="--d:.9s;--d2:4.3s"><b>ConsoleLogInterceptor</b><small><bdi dir="ltr">onRequest</bdi>: يطبع الطلب</small></div>
+        <div class="cn c3 flash2" style="--d:1.4s;--d2:4.8s"><b>dummyjson.com</b><small>الخادم</small></div>
+        <div class="cn c4 flash" style="--d:2.6s"><b>onResponse → data</b><small><bdi dir="ltr">onResponse</bdi>: الرد جاهز</small></div>
+        <div class="cn c5 flash" style="--d:6s"><b>onError → catch</b><small><bdi dir="ltr">onError</bdi>: AppFailure (الدرس 7)</small></div>
+        <div class="pulse pq1" style="--d:.2s"></div>
+        <div class="pulse pq2" style="--d:1.6s"></div>
+        <div class="pulse pq3" style="--d:3.6s"></div>
+        <div class="pulse err pq4" style="--d:5s"></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 22 L6: dioProvider ================= -->
+<section class="slide" data-kicker="الدرس 6 · الإعداد و Interceptors · Dio">
+  <h2 class="a">Dio واحد للتطبيق عبر Provider</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>BaseOptions:</b> رابط أساسي + مهلات + headers مشتركة.</li>
+        <li class="a"><b>الترتيب مهم:</b> HeadersInterceptor أولاً ليرى المسجّل الـ headers المضافة.</li>
+        <li class="a">نفس نمط حقن الاعتماديات (اليوم الأول، الدرس 7) — والشاشات لا تُنشئ <span class="ic">Dio()</span> بنفسها.</li>
+        <li class="a"><span class="ic">ref.onDispose(dio.close)</span> يغلق الاتصالات.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/06_dio_interceptors.dart"><code>final dioProvider = Provider&lt;Dio&gt;((ref) {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://dummyjson.com',
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      headers: {'Accept': 'application/json'},
+    ),
+  );
+
+  dio.interceptors.addAll([
+    HeadersInterceptor(),
+    ConsoleLogInterceptor(ref.read(networkLogProvider.notifier).add),
+  ]);
+
+  ref.onDispose(dio.close); // إغلاق الاتصالات عند حذف الـ provider
+  return dio;
+});</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 23 L6: requests ================= -->
+<section class="slide" data-kicker="الدرس 6 · الإعداد و Interceptors · Dio">
+  <h2 class="a">GET · queryParameters · POST · CancelToken</h2>
+  <div class="body">
+<pre class="code a" data-file="lib/lessons/06_dio_interceptors.dart"><code>// 1) GET بسيط: response.data أصبح Map جاهزاً (Dio يحوّل JSON تلقائياً)
+final response = await dio.get&lt;Map&lt;String, dynamic&gt;&gt;('/products/1');
+// 2) queryParameters: Dio يبني ?q=...&amp;limit=... ويرمّز النص
+queryParameters: {'q': 'phone', 'limit': 3, 'select': 'title,price'},
+// 3) POST مع body: الـ Map يتحوّل إلى JSON تلقائياً
+data: {'title': 'منتج من الورشة', 'price': 42},
+// 5) CancelToken: إلغاء طلب بطيء (?delay=3000 يؤخّر الرد 3 ثوانٍ)
+await dio.get(
+  '/products/1',
+  queryParameters: {'delay': 3000},
+  cancelToken: _cancelToken,
+);
+// نلغي أي طلب معلّق عند الخروج من الشاشة
+_cancelToken?.cancel('خرج المستخدم من الشاشة');</code></pre>
+  </div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 6</span><code>lib/lessons/06_dio_interceptors.dart</code><span class="menu">الكونسول يعرض كل مرحلة من السلسلة</span></div>
+</section>
+
+<!-- ================= 24 TIPS L6 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 6 · الإعداد و Interceptors">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 6</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">Interceptor جاهز للتطوير يطبع كل شيء — أضفه في <span class="ic">kDebugMode</span> فقط:
+<pre class="code tip" data-file="lib/lessons/06_dio_interceptors.dart"><code>dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">لحالة صغيرة لا تحتاج class كاملة: <span class="ic">InterceptorsWrapper(onRequest: (options, handler) { ... })</span></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">مهلة مختلفة لطلب واحد بدون تغيير BaseOptions:
+<pre class="code tip" data-file="lib/lessons/06_dio_interceptors.dart"><code>dio.get('/big', options: Options(receiveTimeout: const Duration(minutes: 2)));</code></pre></div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">مع Riverpod ألغِ الطلب تلقائياً عند الخروج (autoDispose):
+<pre class="code tip" data-file="lib/lessons/06_dio_interceptors.dart"><code>final token = CancelToken();
+ref.onDispose(token.cancel);</code></pre></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 25 L7 OPENER: AppFailure ================= -->
+<section class="slide" data-kicker="الدرس 7 · معالجة الأخطاء · Dio">
+  <div class="lh a"><span class="num">7</span><span class="lt">الدرس 7 · معالجة الأخطاء</span><span class="tag dio">Dio</span></div>
+  <h2 class="a">DioException ← sealed AppFailure — التحويل في مكان واحد</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b><bdi dir="ltr">1)</bdi> AppFailure:</b> <span class="ic">sealed class</span> (الدرس 1) بحالات يفهمها التطبيق.</li>
+        <li class="a"><b><bdi dir="ltr">2)</bdi> Repository:</b> الطبقة الوحيدة التي تعرف Dio.</li>
+        <li class="a"><b><bdi dir="ltr">3)</bdi> الشاشة:</b> AsyncValue + switch شامل.</li>
+        <li class="a">switch على enum شامل: نوع جديد في Dio (مثل <span class="ic">transformTimeout</span>) ← خطأ ترجمة هنا.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/07_error_handling.dart"><code>factory AppFailure.fromDio(DioException e) {
+  return switch (e.type) {
+    DioExceptionType.connectionTimeout ||
+    DioExceptionType.sendTimeout ||
+    DioExceptionType.receiveTimeout =&gt; const TimeoutFailure(),
+    DioExceptionType.connectionError =&gt; const NetworkFailure(),
+    DioExceptionType.cancel =&gt; const CancelledFailure(),
+    DioExceptionType.badResponse =&gt; switch (e.response?.statusCode) {
+      401 || 403 =&gt; const UnauthorizedFailure(),
+      404 =&gt; const NotFoundFailure(),
+      final int code when code &gt;= 500 =&gt; ServerFailure(code),
+      final code =&gt; ServerFailure(code ?? 0, 'طلب غير صالح ($code)'),
+    },
+    DioExceptionType.badCertificate ||
+    DioExceptionType.transformTimeout ||
+    DioExceptionType.unknown =&gt; UnknownFailure(e.message ?? '$e'),
+  };
+}</code></pre>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 26 L7: repository + UI ================= -->
+<section class="slide" data-kicker="الدرس 7 · معالجة الأخطاء · Dio">
+  <h2 class="a">Repository يرمي AppFailure ← الشاشة تعرضه بـ AsyncValue</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>بيانات الشاشة:</b> FutureProvider ← AsyncError(AppFailure).</li>
+        <li class="a"><b>فعل لمرة واحدة</b> (زر «أضف للسلة»): <span class="ic">Result&lt;T&gt;</span> = <span class="ic">Ok</span> / <span class="ic">Err</span> ← SnackBar.</li>
+      </ul>
+      <div class="mods a">
+        <code>NetworkFailure</code><span>📶 إعادة المحاولة</span>
+        <code>UnauthorizedFailure</code><span>🔒 تسجيل الدخول</span>
+        <code>NotFoundFailure</code><span>🔍 بدون زر</span>
+      </div>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/07_error_handling.dart"><code>// يرمي AppFailure ← مناسب لـ FutureProvider / AsyncNotifier
+Future&lt;T&gt; _guard&lt;T&gt;(Future&lt;T&gt; Function() call) async {
+  try {
+    return await call();
+  } on DioException catch (e) {
+    throw AppFailure.fromDio(e);
+  }
+}
+// AsyncValue + أنماط: كل حالة لها Widget
+switch (product) {
+  AsyncError(:final error) =&gt; FailureView(
+    failure: error is AppFailure ? error : UnknownFailure('$error'),
+    onRetry: () =&gt; ref.invalidate(scenarioProductProvider(_scenario)),
+  ),
+  _ =&gt; const Center(child: CircularProgressIndicator()),
+},</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 7</span><code>lib/lessons/07_error_handling.dart</code><span class="menu">6 سيناريوهات: 404 · 500 · 401 · مهلة · بدون إنترنت</span></div>
+</section>
+
+<!-- ================= 27 TIPS L7 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 7 · معالجة الأخطاء">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 7</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">إعادة محاولة تلقائية ذكية في Riverpod 3 — لأخطاء الشبكة فقط وليس لـ 404:
+<pre class="code tip" data-file="lib/lessons/07_error_handling.dart"><code>ProviderScope(retry: (retryCount, error) =&gt;
+    error is NetworkFailure &amp;&amp; retryCount &lt; 3 ? const Duration(seconds: 2) : null)</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">استخدم رسالة الخادم إن وُجدت (dummyjson يرسل <span class="ic">{"message": "..."}</span>):
+<pre class="code tip" data-file="lib/lessons/07_error_handling.dart"><code>final serverMessage = (e.response?.data as Map?)?['message'] as String?;</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">لا تعرض <span class="ic">e.toString()</span> للمستخدم أبداً — اعرض <span class="ic">failure.message</span> وأرسل التفاصيل لـ Crashlytics.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">فشل التحديث مع وجود بيانات قديمة؟ اعرضها مع شريط خطأ صغير: <span class="ic">product.hasValue &amp;&amp; product.hasError</span></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 28 L8 OPENER: 401 refresh retry ================= -->
+<section class="slide" data-kicker="الدرس 8 · Access و Refresh tokens · Dio">
+  <div class="lh a"><span class="num">8</span><span class="lt">الدرس 8 · Access و Refresh tokens</span><span class="tag dio">Dio</span></div>
+  <h2 class="a">401 ← refresh ← إعادة الطلب: المستخدم لا يلاحظ شيئاً</h2>
+  <div class="body"><div class="cols diagram wd">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>accessToken:</b> قصير العمر (هنا دقيقة واحدة) — مع كل طلب.</li>
+        <li class="a"><b>refreshToken:</b> طويل العمر — فقط لطلب access جديد.</li>
+        <li class="a"><b><bdi dir="ltr">QueuedInterceptor</bdi>:</b> ثلاثة طلبات فاشلة معاً ← تجديد <b>واحد</b> فقط.</li>
+        <li class="a">فشل التجديد ← خروج إجباري.</li>
+      </ul>
+      <div class="warn a"><b>⚠️</b> التوكنات هنا في الذاكرة — <span class="ic">flutter_secure_storage</span> في اليوم الثالث.</div>
+    </div>
+    <div class="col dia">
+      <div class="diagram sq a" data-loop="10000">
+        <div class="lanes"><span>الخادم<small>dummyjson</small></span><span>AuthInterceptor<small>QueuedInterceptor</small></span><span>الشاشة<small>authDio</small></span></div>
+        <div class="rows">
+          <div class="life" style="left:16.67%"></div><div class="life" style="left:50%"></div><div class="life" style="left:83.33%"></div>
+          <div class="row" style="--d:.3s"><span class="num">1</span><div class="msg tl" style="left:50%;width:33.33%"><span>GET /auth/me</span></div></div>
+          <div class="row" style="--d:1.2s"><span class="num">2</span><div class="msg tl" style="left:16.67%;width:33.33%"><span>Bearer expired</span></div></div>
+          <div class="row" style="--d:2.1s"><span class="num">3</span><div class="msg tr bad" style="left:16.67%;width:33.33%"><span>401 ✖</span></div></div>
+          <div class="row" style="--d:3s"><span class="num">4</span><div class="msg tl ref" style="left:16.67%;width:33.33%"><span>POST /auth/refresh</span></div></div>
+          <div class="row" style="--d:3.9s"><span class="num">5</span><div class="msg tr ok" style="left:16.67%;width:33.33%"><span>200 <bdi>توكن جديد</bdi></span></div></div>
+          <div class="row" style="--d:4.8s"><span class="num">6</span><span class="self">saveTokens(fresh)</span></div>
+          <div class="row" style="--d:5.7s"><span class="num">7</span><div class="msg tl" style="left:16.67%;width:33.33%"><span>retry + Bearer new</span></div></div>
+          <div class="row" style="--d:6.6s"><span class="num">8</span><div class="msg tr ok" style="left:16.67%;width:33.33%"><span>200 ✓</span></div></div>
+          <div class="row" style="--d:7.5s"><span class="num">9</span><div class="msg tr ok" style="left:50%;width:33.33%"><span>resolve(response)</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 29 L8: onError code ================= -->
+<section class="slide" data-kicker="الدرس 8 · Access و Refresh tokens · Dio">
+  <h2 class="a">داخل <span class="en">AuthInterceptor.onError</span></h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><span class="ic">onRequest</span> يضيف header اسمه <span class="ic">Authorization</span> بقيمة <span class="ic">Bearer &lt;access&gt;</span> لكل طلب.</li>
+        <li class="a">جدّد طلب آخر التوكن أثناء الانتظار في الطابور؟ ← أعد المحاولة مباشرة.</li>
+        <li class="a"><b>plainDio</b> بدون هذا الـ Interceptor للتجديد وإعادة المحاولة — وإلا حلقة أو انتظار للأبد.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/08_auth_tokens.dart"><code>final tokens = readTokens();
+if (err.response?.statusCode != 401 || tokens == null) {
+  handler.next(err);
+  return;
+}
+// هل جدّد طلب آخر التوكن بينما كان هذا الطلب ينتظر في الطابور؟
+final sent = options.headers['Authorization'];
+if (sent == 'Bearer ${tokens.access}') {
+  fresh = await _refresh(tokens.refresh);
+  saveTokens(fresh);
+} else {
+  fresh = tokens;
+}
+// إعادة إرسال الطلب الأصلي نفسه بالتوكن الجديد
+options.headers['Authorization'] = 'Bearer ${fresh.access}';
+final response = await plainDio.fetch&lt;dynamic&gt;(options);
+handler.resolve(response); // الشاشة تستلم الرد وكأن شيئاً لم يحدث</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 8</span><code>lib/lessons/08_auth_tokens.dart</code><code>test/auth_interceptor_test.dart</code></div>
+</section>
+
+<!-- ================= 30 TIPS L8 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 8 · Access و Refresh tokens">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 8</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">لا تُرسل التوكن لخوادم أخرى (CDN للصور، API خارجي) — افحص الـ host أولاً:
+<pre class="code tip" data-file="lib/lessons/08_auth_tokens.dart"><code>if (options.uri.host == 'dummyjson.com') options.headers['Authorization'] = ...</code></pre></div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">اربط حارس go_router (الدرس 5) بمخزن التوكنات ← الخروج الإجباري يحوّل لصفحة الدخول تلقائياً:
+<pre class="code tip" data-file="lib/lessons/08_auth_tokens.dart"><code>final loggedIn = ref.read(tokenStoreProvider) != null;</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">جدّد قبل الانتهاء بدل انتظار 401: الـ JWT يحمل حقل <span class="ic">exp</span>، فإذا بقي أقل من 30 ثانية جدّد في onRequest.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">طلب الـ refresh نفسه يجب ألا يمر بـ AuthInterceptor (لذلك <span class="ic">plainDio</span>) — وإلا 401 من <span class="ic">/auth/refresh</span> يُطلق تجديداً آخر بلا نهاية.</div></div>
+  </div></div>
+</section>
+
+<!-- ================= 31 L9 OPENER: loadMore ================= -->
+<section class="slide" data-kicker="الدرس 9 · Pagination · Dio">
+  <div class="lh a"><span class="num">9</span><span class="lt">الدرس 9 · Pagination</span><span class="tag dio">Dio</span></div>
+  <h2 class="a">صفحة صغيرة الآن، والتالية عند الاقتراب من النهاية</h2>
+  <div class="body">
+    <div class="chips a" style="margin-bottom:16px"><span>GET /products?limit=20&amp;skip=0</span><span>GET /products?limit=20&amp;skip=20</span><span>stop: items.length == total</span></div>
+<pre class="code a" data-file="lib/lessons/09_pagination.dart"><code>Future&lt;void&gt; loadMore() async {
+  final feed = state.value;
+  // حماية من الطلبات المكررة: التمرير يستدعي loadMore عشرات المرات في الثانية
+  if (feed == null || feed.isLoadingMore || !feed.hasMore) return;
+
+  state = AsyncData(feed.copyWith(isLoadingMore: true, loadMoreError: null));
+  try {
+    final page = await ref
+        .read(productsRepositoryProvider)
+        .page(skip: feed.items.length, limit: pageSize);
+    if (!ref.mounted) return; // خرج المستخدم أثناء الانتظار
+    state = AsyncData(
+      feed.copyWith(
+        items: [...feed.items, ...page.products], // قائمة جديدة (immutable)</code></pre>
+  </div>
+</section>
+
+<!-- ================= 32 L9: UI ================= -->
+<section class="slide" data-kicker="الدرس 9 · Pagination · Dio">
+  <h2 class="a"><span class="en">NotificationListener</span> + عنصر أخير للحالة</h2>
+  <div class="body"><div class="cols wide">
+    <div class="col text">
+      <ul class="bul tight">
+        <li class="a"><b>الصفحة الأولى:</b> <span class="ic">build()</span> ← AsyncLoading / AsyncError للشاشة كاملة.</li>
+        <li class="a"><b>الصفحات التالية:</b> <span class="ic">isLoadingMore</span> / <span class="ic">loadMoreError</span> في أسفل القائمة — لا نخفي ما حمّلناه.</li>
+        <li class="a">السحب للتحديث = الصفحة الأولى من جديد.</li>
+      </ul>
+    </div>
+    <div class="col code">
+<pre class="code a" data-file="lib/lessons/09_pagination.dart"><code>RefreshIndicator(
+  onRefresh: () =&gt; ref.refresh(productsFeedProvider.future),
+  child: NotificationListener&lt;ScrollNotification&gt;(
+    onNotification: (notification) {
+      if (notification.metrics.extentAfter &lt; 600) {
+        ref.read(productsFeedProvider.notifier).loadMore();
+      }
+      return false;
+    },
+    child: ListView.builder(
+      // +1 لعنصر أخير: مؤشر تحميل / خطأ / "النهاية"
+      itemCount: value.items.length + 1,
+      itemBuilder: (context, i) =&gt; i &lt; value.items.length
+          ? _ProductTile(product: value.items[i], index: i)
+          : _Footer(feed: value),</code></pre>
+    </div>
+  </div></div>
+  <div class="run a"><span class="lbl">في التطبيق: الدرس 9</span><code>lib/lessons/09_pagination.dart</code><span class="menu">راقب «تم تحميل X من 194»</span></div>
+</section>
+
+<!-- ================= 33 TIPS L9 ================= -->
+<section class="slide tips" data-kicker="💡 حيل الدرس 9 · Pagination">
+  <div class="tipbar"></div>
+  <h2 class="a">💡 حيل الدرس 9</h2>
+  <div class="body"><div class="tiplist">
+    <div class="tipcard a"><span class="n">1</span><div class="tx">الصفحة الأولى لا تملأ الشاشة (جهاز لوحي)؟ لن يحدث تمرير فلا تُطلب الثانية — لذلك أبقينا زر «تحميل المزيد»، أو اجعل <span class="ic">pageSize</span> أكبر.</div></div>
+    <div class="tipcard a"><span class="n">2</span><div class="tx">عناصر بنفس الارتفاع؟ <span class="ic">itemExtent</span> يجعل حساب التمرير أسرع مع آلاف العناصر:
+<pre class="code tip" data-file="lib/lessons/09_pagination.dart"><code>ListView.builder(itemExtent: 72, ...)</code></pre></div></div>
+    <div class="tipcard a"><span class="n">3</span><div class="tx">API يستخدم cursor بدل skip (مثل <span class="ic">next_cursor</span>)؟ نفس الحالة تماماً — احفظ <span class="ic">String? nextCursor</span> بدل <bdi dir="ltr">items.length</bdi>.</div></div>
+    <div class="tipcard a"><span class="n">4</span><div class="tx">مع البحث: provider family بنص البحث ← كل كلمة لها صفحاتها، و autoDispose يحذف النتائج القديمة: <span class="ic">productsFeedProvider(query)</span></div></div>
+  </div></div>
+</section>
+
+<!-- ================= 34 RECAP ================= -->
+<section class="slide" data-kicker="خلاصة اليوم">
+  <h2 class="a">ملخص اليوم الثاني — درس واحد لكل سطر</h2>
+  <div class="body"><div class="recap">
+    <div class="part a">
+      <h3>الدروس 1 – 5</h3>
+      <ul>
+        <li class="a"><b>1 · Records و Sealed:</b> قيم بدون class، و switch شامل بدون default، وأنماط تفكّك وتفحص معاً.</li>
+        <li class="a"><b>2 · freezed:</b> <span class="ic">fromJson</span> · <span class="ic">copyWith</span> · <span class="ic">==</span> · Union — والـ Models نفسها للشبكة.</li>
+        <li class="a"><b>3 · go_router:</b> path / query / extra، و go يبني المكدّس بينما push يضيف فوقه.</li>
+        <li class="a"><b>4 · ShellRoute:</b> <span class="ic">StatefulShellRoute</span> = Navigator لكل تبويب يحفظ حالته.</li>
+        <li class="a"><b>5 · redirect:</b> حارس دالة عادية + refreshListenable، و Deep link يمر بنفس الطريق.</li>
+      </ul>
+    </div>
+    <div class="part a">
+      <h3>الدروس 6 – 9</h3>
+      <ul>
+        <li class="a"><b>6 · Dio:</b> BaseOptions + Interceptors بالترتيب، وكل مرحلة تنادي <span class="ic">handler.next</span>.</li>
+        <li class="a"><b>7 · الأخطاء:</b> DioException ← <span class="ic">AppFailure</span> في Repository ← AsyncValue + switch.</li>
+        <li class="a"><b>8 · التوكنات:</b> 401 ← refresh ← retry في QueuedInterceptor، و plainDio بدون حلقة.</li>
+        <li class="a"><b>9 · Pagination:</b> <span class="ic">limit/skip</span>، حماية من الطلبات المكررة، وعنصر أخير للحالة.</li>
+      </ul>
+    </div>
+  </div></div>
+</section>
+
+<!-- ================= 35 EXERCISES ================= -->
+<section class="slide" data-kicker="تمارين عملية">
+  <h2 class="a">تمارين — عدّل أمثلة التطبيق بنفسك</h2>
+  <div class="body">
+    <ol class="ex">
+      <li class="a"><b>الدرس 1:</b> أضف <span class="ic">Triangle</span> إلى <span class="ic">Shape</span> ولاحظ خطأ الترجمة في <span class="ic">area()</span>، ثم أكمل الحالة.</li>
+      <li class="a"><b>الدرس 2 ← 9:</b> أضف <span class="ic">@Default(0) int stock</span> إلى Product وأعد التوليد، ثم أضفه إلى <span class="ic">select</span> واعرضه في قائمة الدرس 9.</li>
+      <li class="a"><b>الدرس 4:</b> أضف تبويباً رابعاً «السلة» بـ <span class="ic">StatefulShellBranch</span> ومساراً متداخلاً <span class="ic">item/:id</span> داخله.</li>
+      <li class="a"><b>الدرس 5:</b> أضف <span class="ic">/l5/account/edit</span> وتأكد أنه محمي تلقائياً، ثم افتحه برابط adb وأنت غير مسجّل.</li>
+      <li class="a wide"><b>الدرس 8 + 5:</b> اربط <span class="ic">lesson5Guard</span> بـ <span class="ic">tokenStoreProvider</span> بدل demoSessionProvider، واكتب في <span class="ic">test/auth_interceptor_test.dart</span> اختباراً يتأكد أن طلباً لـ <span class="ic">cdn.dummyjson.com</span> لا يحمل Authorization.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= 36 CLOSING / DAY 3 ================= -->
+<section class="slide" data-kicker="نهاية اليوم الثاني">
+  <h2 class="a">غداً — اليوم الثالث</h2>
+  <div class="body">
+    <div class="next">
+      <div class="card a"><h3>التخزين المحلي وقواعد البيانات</h3><ul>
+        <li><span class="ic">shared_preferences</span> للإعدادات البسيطة</li>
+        <li><span class="ic">flutter_secure_storage</span> — نحفظ فيه توكنات الدرس 8</li>
+        <li><span class="ic">Drift</span>: قاعدة SQL بأنواع آمنة و Streams</li>
+        <li>العمل بدون إنترنت: كاش للمنتجات</li>
+      </ul></div>
+      <div class="card a"><h3>المعمارية</h3><ul>
+        <li>طبقات data / domain / presentation</li>
+        <li>Repository (بدأناه في الدرس 7)</li>
+        <li>تنظيم المجلدات حسب الميزة (feature-first)</li>
+        <li>أين يعيش Dio و go_router في مشروع كبير؟</li>
+      </ul></div>
+    </div>
+    <div class="key a" style="margin-top:22px;font-size:30px"><b>+ درس Dart قصير:</b> Generics و Streams — أساس Repository عام و Drift. <b>قبل الغد:</b> شغّل الدروس التسعة وجرّب Deep link واحداً على المحاكي. — أسئلة؟</div>
+  </div>
+</section>
+
+</div><!-- /stage -->
+
+<div id="counter">1 / 36</div>
+<div id="nav"><button id="prevBtn" title="السابق">›</button><button id="ovBtn" title="نظرة عامة (O)">⊞</button><button id="nextBtn" title="التالي">‹</button></div>
+<div id="overview"><div class="grid"></div></div>
+<pre id="audit"></pre>
+
+<script>
+(function(){
+  'use strict';
+  var errs=[];
+  window.addEventListener('error',function(e){errs.push(String(e.message||e));});
+
+  var stage=document.getElementById('stage');
+  var slides=Array.prototype.slice.call(stage.querySelectorAll('.slide'));
+  var n=slides.length, cur=-1, loopTimer=null, leaveTimer=null;
+  var params=location.search;
+  var isStatic=/[?&](static|check)\b/.test(params)||matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(isStatic) document.documentElement.classList.add('static');
+
+  /* ---------- stagger indices ---------- */
+  slides.forEach(function(s){
+    var i=0;
+    s.querySelectorAll('.a').forEach(function(el){
+      el.style.setProperty('--i',i);
+      if(el.tagName==='PRE') el.style.setProperty('--pi',i);
+      i++;
+    });
+  });
+
+  /* ---------- tiny Dart highlighter ---------- */
+  var KW={};'abstract as async await base break case catch class const continue covariant default do dynamic else enum export extends extension external factory false final finally for get hide if implements import in interface is late library mixin new null on operator part required rethrow return sealed set show static super switch sync this throw true try typedef var void when while with yield'.split(' ').forEach(function(k){KW[k]=1;});
+  var TY={};'int double num bool String List Map Set Future Stream Object Never Iterable Duration DateTime Timer Completer Stopwatch Isolate SendPort ReceivePort Ref WidgetRef BuildContext Widget'.split(' ').forEach(function(k){TY[k]=1;});
+  var AR=/[؀-ۿ]/;
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function tokLine(line){
+    var out='',m;
+    var re=/(\/\/.*)|(r?'(?:[^'\\]|\\.)*'|r?"(?:[^"\\]|\\.)*")|(@[A-Za-z_]\w*)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)|(\s+)|([\s\S])/g;
+    while((m=re.exec(line))){
+      if(m[1]){
+        var mm=/^(\/\/+)([\s\S]*)$/.exec(m[1]);
+        var lead=/^(\s*\d+\)\s*)([\s\S]*)$/.exec(mm[2]); if(lead&&AR.test(lead[2])){ out+='<span class="cm">'+esc(mm[1]+lead[1])+'</span><span class="cm" dir="rtl">'+esc(lead[2])+'</span>'; } else { var lead=/^(\s*\d+\)\s*)([\s\S]*)$/.exec(mm[2]); if(lead&&AR.test(lead[2])){ out+='<span class="cm">'+esc(mm[1]+lead[1])+'</span><span class="cm" dir="rtl">'+esc(lead[2])+'</span>'; } else { out+='<span class="cm">'+esc(mm[1])+'</span><span class="cm" dir="'+(AR.test(mm[2])?'rtl':'ltr')+'">'+esc(mm[2])+'</span>'; } }
+      }else if(m[2]){
+        var s=esc(m[2]);
+        if(m[2].charAt(0)!=='r') s=s.replace(/\$\{[^}]*\}|\$\w+/g,function(x){return '<span class="ip">'+x+'</span>';});
+        out+='<span class="st"'+(AR.test(m[2])?' dir="rtl"':'')+'>'+s+'</span>';
+      }else if(m[3]){ out+='<span class="an">'+esc(m[3])+'</span>'; }
+      else if(m[4]){ out+='<span class="nu">'+m[4]+'</span>'; }
+      else if(m[5]){
+        var w=m[5], rest=line.slice(re.lastIndex), isCall=/^\s*\(/.test(rest)&&!/^\s*\(\s*\)\s*(=>|\{)/.test(rest)&&!KW[w];
+        if(KW[w]) out+='<span class="kw">'+w+'</span>';
+        else if(TY[w]||/^_?\$?[A-Z]/.test(w)) out+='<span class="ty">'+w+'</span>';
+        else if(isCall) out+='<span class="fn">'+esc(w)+'</span>';
+        else out+=esc(w);
+      }else out+=esc(m[0]);
+    }
+    return out;
+  }
+  stage.querySelectorAll('pre.code code').forEach(function(code){
+    var lines=code.textContent.replace(/\s+$/,'').split('\n');
+    code.innerHTML=lines.map(function(l,i){return '<span class="ln" style="--i:'+i+'">'+(tokLine(l)||' ')+'</span>';}).join('');
+  });
+
+  /* ---------- auto-fit code font so the widest line fits its block (min 22px) ---------- */
+  function fitCode(){
+    stage.querySelectorAll('pre.code').forEach(function(pre){
+      var code=pre.querySelector('code'); if(!code) return;
+      pre.style.fontSize='';
+      var fs=parseFloat(getComputedStyle(pre).fontSize), guard=0;
+      while(code.scrollWidth>code.clientWidth+1 && fs>22 && guard++<8){ fs-=1; pre.style.fontSize=fs+'px'; }
+    });
+  }
+  fitCode();
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitCode);
+
+  /* ---------- fit 16:9 stage ---------- */
+  function fit(){
+    var s=Math.min(innerWidth/1920,innerHeight/1080);
+    stage.style.transform='scale('+s+')';
+    stage.style.left=((innerWidth-1920*s)/2)+'px';
+    stage.style.top=((innerHeight-1080*s)/2)+'px';
+  }
+  addEventListener('resize',fit); fit();
+
+  /* ---------- diagrams loop ---------- */
+  function startLoop(slide){
+    stopLoop();
+    if(isStatic) return;
+    var d=slide.querySelector('.diagram[data-loop]'); if(!d) return;
+    var play=function(){ d.classList.remove('play'); void d.offsetWidth; d.classList.add('play'); };
+    play();
+    loopTimer=setInterval(play,parseInt(d.getAttribute('data-loop'),10)||8000);
+    loopTimer._d=d;
+  }
+  function stopLoop(){
+    if(loopTimer){ clearInterval(loopTimer); if(loopTimer._d) loopTimer._d.classList.remove('play'); loopTimer=null; }
+  }
+
+  /* ---------- navigation ---------- */
+  var progress=document.getElementById('progress'), counter=document.getElementById('counter');
+  function go(i,dir){
+    i=Math.max(0,Math.min(n-1,i));
+    if(i===cur) return;
+    if(dir===undefined) dir=i>cur?1:-1;
+    stage.classList.toggle('back',dir<0);
+    if(cur>=0){
+      var old=slides[cur];
+      old.classList.remove('active'); old.classList.add('leaving');
+      clearTimeout(leaveTimer);
+      leaveTimer=setTimeout(function(){ old.classList.remove('leaving'); },650);
+      slides.forEach(function(s){ if(s!==old) s.classList.remove('leaving'); });
+    }
+    cur=i;
+    slides[cur].classList.add('active');
+    progress.style.width=((cur+1)/n*100)+'%';
+    counter.textContent=(cur+1)+' / '+n;
+    if(('#'+(cur+1))!==location.hash) history.replaceState(null,'','#'+(cur+1));
+    startLoop(slides[cur]);
+  }
+  function next(){ go(cur+1,1); } function prev(){ go(cur-1,-1); }
+  function fromHash(){ var h=parseInt((location.hash||'').replace('#',''),10); return isNaN(h)?0:h-1; }
+  addEventListener('hashchange',function(){ var i=fromHash(); if(i!==cur) go(i); });
+
+  /* ---------- overview ---------- */
+  var ov=document.getElementById('overview'), grid=ov.querySelector('.grid');
+  function openOverview(){
+    grid.innerHTML='';
+    var cols=5, w=(ov.clientWidth-56-(cols-1)*18)/cols, sc=w/1920;
+    slides.forEach(function(s,i){
+      var t=document.createElement('div'); t.className='thumb'+(i===cur?' cur':'');
+      var c=s.cloneNode(true); c.classList.add('active'); c.classList.remove('leaving'); c.style.transform='scale('+sc+')';
+      c.querySelectorAll('.diagram').forEach(function(d){ d.classList.remove('play'); });
+      t.appendChild(c);
+      var num=document.createElement('span'); num.className='num'; num.textContent=i+1; t.appendChild(num);
+      t.addEventListener('click',function(ev){ ev.stopPropagation(); closeOverview(); go(i); });
+      grid.appendChild(t);
+    });
+    ov.classList.add('open');
+    var curT=grid.querySelector('.thumb.cur'); if(curT) curT.scrollIntoView({block:'center'});
+  }
+  function closeOverview(){ ov.classList.remove('open'); grid.innerHTML=''; }
+  function toggleOverview(){ ov.classList.contains('open')?closeOverview():openOverview(); }
+
+  /* ---------- fullscreen ---------- */
+  function toggleFull(){
+    if(document.fullscreenElement) document.exitFullscreen();
+    else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  }
+
+  /* ---------- input ---------- */
+  addEventListener('keydown',function(e){
+    if(e.altKey||e.ctrlKey||e.metaKey) return;
+    var k=e.key;
+    if(ov.classList.contains('open')&&(k==='Escape'||k==='o'||k==='O')){ closeOverview(); e.preventDefault(); return; }
+    switch(k){
+      case 'ArrowRight': case 'PageDown': case ' ': case 'Enter': if(e.shiftKey&&k===' '){prev();}else{next();} e.preventDefault(); break;
+      case 'ArrowLeft': case 'PageUp': case 'Backspace': prev(); e.preventDefault(); break;
+      case 'ArrowDown': next(); e.preventDefault(); break;
+      case 'ArrowUp': prev(); e.preventDefault(); break;
+      case 'Home': go(0,-1); e.preventDefault(); break;
+      case 'End': go(n-1,1); e.preventDefault(); break;
+      case 'f': case 'F': toggleFull(); break;
+      case 'o': case 'O': toggleOverview(); e.preventDefault(); break;
+    }
+  });
+  stage.addEventListener('click',function(e){
+    if(e.target.closest('a,button')) return;
+    if(window.getSelection&&String(window.getSelection())) return;
+    next();
+  });
+  document.getElementById('prevBtn').addEventListener('click',function(e){e.stopPropagation();prev();});
+  document.getElementById('nextBtn').addEventListener('click',function(e){e.stopPropagation();next();});
+  document.getElementById('ovBtn').addEventListener('click',function(e){e.stopPropagation();toggleOverview();});
+  var tx=null,ty=null;
+  addEventListener('touchstart',function(e){ var t=e.changedTouches[0]; tx=t.clientX; ty=t.clientY; },{passive:true});
+  addEventListener('touchend',function(e){
+    if(tx===null) return; var t=e.changedTouches[0], dx=t.clientX-tx, dy=t.clientY-ty; tx=null;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){ if(dx<0) next(); else prev(); }
+  },{passive:true});
+
+  go(fromHash(),1);
+
+  /* ---------- presenter chrome auto-hide (2s idle) ---------- */
+  var idleT=null;
+  function wake(){ document.body.classList.remove('idle'); clearTimeout(idleT); idleT=setTimeout(function(){ document.body.classList.add('idle'); },2000); }
+  addEventListener('mousemove',wake,{passive:true});
+  addEventListener('touchstart',wake,{passive:true});
+  wake();
+
+  /* ---------- self-check (?check): layout overflow + JS errors ---------- */
+  if(/[?&]check\b/.test(params)){
+    var report={slides:n,errors:errs,small:[],overflow:[],tight:[],pulses:[],fonts:[],colOverflow:[],boxOverflow:[],paren:{checked:0,skippedPairs:0,fail:[]}};
+    function desc(el){ return el.tagName.toLowerCase()+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).join('.'):''); }
+    function run(){
+      fitCode();
+      slides.forEach(function(s,idx){
+        /* parenthesis rule: for every text node matching /\d+\)/ the ")" must sit to the RIGHT of its digit
+           (a ")" that closes an earlier "(" in the same node is an RTL bracket pair and is skipped) */
+        (function(){ var w=document.createTreeWalker(s,NodeFilter.SHOW_TEXT),t; while((t=w.nextNode())){ var txt=t.textContent; if(!/\d\)/.test(txt)) continue; var re=/\d\)/g,m; while((m=re.exec(txt))){ var i=m.index, before=txt.slice(0,i); var open=(before.match(/\(/g)||[]).length, close=(before.match(/\)/g)||[]).length; if(open>close){ report.paren.skippedPairs++; continue; } var r1=document.createRange(); r1.setStart(t,i); r1.setEnd(t,i+1); var r2=document.createRange(); r2.setStart(t,i+1); r2.setEnd(t,i+2); var a=r1.getBoundingClientRect(), b=r2.getBoundingClientRect(); if(a.width===0&&b.width===0) continue; report.paren.checked++; if(!(b.left>a.left)) report.paren.fail.push({slide:idx+1,text:txt.trim().slice(0,40),parent:desc(t.parentNode)}); } } })();
+        /* readability floor: every visible text node + the kicker/footer pseudo-elements >= 24px */
+        (function(){ var w=document.createTreeWalker(s,NodeFilter.SHOW_TEXT),t; while((t=w.nextNode())){ if(!t.textContent.trim()) continue; var el=t.parentElement; if(!el) continue; var cs=getComputedStyle(el); if(cs.display==='none') continue; var f=parseFloat(cs.fontSize); if(f<23.99) report.small.push({slide:idx+1,fs:f,el:desc(el),text:t.textContent.trim().slice(0,30)}); } ['::before','::after'].forEach(function(ps){ var c=getComputedStyle(s,ps); if(c.content&&c.content!=='none'&&c.content!=='normal'){ var f=parseFloat(c.fontSize); if(f<23.99) report.small.push({slide:idx+1,fs:f,el:'section'+ps}); } }); })();
+        /* content wider/taller than its own box (clipped or spilling text), for every non-inline element */
+        s.querySelectorAll('*').forEach(function(el){
+          if(el.closest('svg')||el===s||el.classList.contains('pipe')||el.classList.contains('line')) return;
+          var cs=getComputedStyle(el); if(cs.display==='inline'||cs.display==='none'||cs.display==='contents') return;
+          var dx=el.scrollWidth-el.clientWidth, dy=el.scrollHeight-el.clientHeight;
+          if(dx>1||dy>1) report.boxOverflow.push({slide:idx+1,el:desc(el),dx:dx,dy:dy,text:(el.textContent||'').trim().slice(0,30)});
+        });
+        s.querySelectorAll('pre.code').forEach(function(p){ var f=parseFloat(getComputedStyle(p).fontSize); if(f<27) report.fonts.push({slide:idx+1,fs:f}); });
+        s.querySelectorAll('.ic, .run code').forEach(function(ic){
+          var col=ic.closest('.col, .card, .ex li, .recap li, .run, .sub'); if(!col) return;
+          var a=ic.getBoundingClientRect(), b=col.getBoundingClientRect();
+          if(a.left<b.left-1||a.right>b.right+1) report.colOverflow.push({slide:idx+1,text:ic.textContent.slice(0,40),by:Math.round(Math.max(b.left-a.left,a.right-b.right))});
+        });
+        slides.forEach(function(o){ o.classList.remove('active','leaving'); });
+        s.classList.add('active');
+        var r=s.getBoundingClientRect();
+        s.querySelectorAll('*').forEach(function(el){
+          if(el.closest('svg')&&el.tagName!=='svg') return;
+          var b=el.getBoundingClientRect(); if(b.width<2||b.height<2) return;
+          var tag=el.tagName.toLowerCase()+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).join('.'):'');
+          if(b.right>r.right+1||b.left<r.left-1||b.bottom>r.bottom+1||b.top<r.top-1)
+            report.overflow.push({slide:idx+1,el:tag,dx:Math.round(Math.max(b.right-r.right,r.left-b.left)),dy:Math.round(Math.max(b.bottom-r.bottom,r.top-b.top))});
+          else if(b.bottom>r.bottom-40 && !el.closest('.run') && el.tagName!=='SECTION' && !el.classList.contains('tipbar'))
+            report.tight.push({slide:idx+1,el:tag,gap:Math.round(r.bottom-b.bottom)});
+        });
+        s.querySelectorAll('pre.code code').forEach(function(c){
+          if(c.scrollWidth>c.clientWidth+1) report.overflow.push({slide:idx+1,el:'code-h',dx:c.scrollWidth-c.clientWidth});
+        });
+        s.querySelectorAll('.rp .pulse').forEach(function(p){
+          p.style.offsetDistance='100%'; p.style.opacity='1';
+          var b=p.getBoundingClientRect(), d=p.parentNode.getBoundingClientRect();
+          report.pulses.push({slide:idx+1,cls:p.className,x:Math.round((b.left+b.width/2-d.left)/(d.width/940)),y:Math.round((b.top+b.height/2-d.top)/(d.height/760))});
+          p.style.offsetDistance=''; p.style.opacity='';
+        });
+      });
+      slides.forEach(function(o){ o.classList.remove('active'); });
+      slides[cur].classList.add('active');
+      // dedupe tight by slide
+      var seen={}; report.tight=report.tight.filter(function(t){ var k=t.slide+t.el; if(seen[k]) return false; seen[k]=1; return true; });
+      document.getElementById('audit').textContent=JSON.stringify(report);
+      document.title='AUDIT_DONE';
+    }
+    if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ setTimeout(run,100); }); else setTimeout(run,500);
+  }
+})();
+</script>
+</body>
+</html>

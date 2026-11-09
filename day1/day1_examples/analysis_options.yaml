@@ -1,0 +1,15 @@
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - linux/**
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # مشروع تعليمي: نستخدم print للعرض، وأسماء ملفات مرقّمة لترتيب الدروس
+    avoid_print: false
+    file_names: false
+    unawaited_futures: true

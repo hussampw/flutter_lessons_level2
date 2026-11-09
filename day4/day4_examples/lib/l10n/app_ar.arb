@@ -1,0 +1,10 @@
+{
+  "@@locale": "ar",
+  "appTitle": "ورشة Flutter — اليوم الرابع",
+  "hello": "أهلاً {name}!",
+  "cartItems": "{count, plural, =0{السلة فارغة} =1{منتج واحد} =2{منتجان} few{{count} منتجات} many{{count} منتجاً} other{{count} منتج}}",
+  "welcomeBack": "{gender, select, male{أهلاً بعودتك} female{أهلاً بعودتكِ} other{أهلاً بعودتك}}",
+  "total": "الإجمالي: {amount}",
+  "today": "اليوم {date}",
+  "addToCart": "أضف {product} إلى السلة"
+}
